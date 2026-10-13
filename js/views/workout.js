@@ -782,12 +782,21 @@ export function mountWorkout(root) {
     refresh({ figure: false });
   });
   h('[data-act="settype"]', (e, t) => setTypeSheet(Number(t.dataset.k)));
-  h('[data-act="warm"]', () => {
+  h('[data-act="warm"]', async () => {
     const e = curEx(); if (!e) return;
     readInputs();
-    const work = Number(e.sets.find((s) => !s.done)?.weight) || Number(e.sets[0]?.weight) || 0;
+    let work = Number(e.sets.find((s) => !s.done)?.weight) || Number(e.sets[0]?.weight) || 0;
+    if (!work) {
+      const v = await promptSheet('Carico di lavoro', {
+        label: 'kg della serie principale', placeholder: 'es. 60',
+        ok: 'Calcola riscaldamento',
+      });
+      work = Number(String(v || '').replace(',', '.'));
+      if (!work) return;
+      for (const s of e.sets) if (!s.done && s.weight == null) s.weight = work;
+    }
     const ws = warmupSets(work, getEx(e.exId));
-    if (!ws.length) { toast('Carico troppo basso per il riscaldamento'); return; }
+    if (!ws.length) { toast(`Con ${fmtWeight(work)} kg il riscaldamento non serve`); return; }
     e.sets.unshift(...ws.map((s) => ({ id: uid(), weight: s.weight, reps: s.reps, rpe: null, type: 'w', done: false })));
     W().cursor.set = 0;
     refresh({ figure: false });

@@ -101,7 +101,7 @@ export function prevSet(exId, workIndex) {
 
 /** Serie di riscaldamento proposte per un carico di lavoro. */
 export function warmupSets(work, ex) {
-  if (!work || work < 40) return [];
+  if (!work || work < 25) return [];
   const bar = ex?.eq === 'bilanciere' || ex?.eq === 'smith' ? S.settings.barWeight : 0;
   const out = [];
   const f = [[0.5, 8], [0.7, 5], [0.85, 3]];
