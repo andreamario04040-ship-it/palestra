@@ -23,10 +23,10 @@ const FLOOR = 130;
 
 /* spessori: raggio all'estremità prossimale e distale di ogni segmento */
 const R = {
-  torso: [9.5, 11],      // bacino -> spalle
-  thigh: [7.6, 5.4], shin: [5, 3.4], foot: [3.4, 2.2],
-  arm: [4.8, 3.8], fore: [3.8, 2.9], hand: 3.1,
-  neck: 4.4, head: [7.8, 8.8],
+  torso: [8.6, 12.2],    // bacino -> spalle: la V del dorso
+  thigh: [8, 5.6], shin: [5.2, 3.4], foot: [3.4, 2.2],
+  arm: [5.2, 4], fore: [4, 3], hand: 3.1,
+  neck: 4.6, head: [7.8, 8.8],
 };
 
 /* ------------------------------------------------------------- geometria - */
@@ -456,27 +456,58 @@ function poseAt(pat, t) {
   return t < 0.5 ? blend(pat.a, pat.mid, t * 2) : blend(pat.mid, pat.b, (t - 0.5) * 2);
 }
 
-/* -------------------------------------------------- muscolo evidenziato -- */
+/* ------------------------------------------------------------ muscoli --- */
+/* La figura non è una sagoma liscia: sopra al corpo corrono i contorni dei
+   gruppi muscolari, ancorati alle stesse articolazioni e quindi deformati
+   dalla posa. Il gruppo che lavora viene poi ridisegnato pieno, in rosso. */
 
-const seg = (a, b, ra, rb, from = 0.12, to = 0.95) =>
-  capsule(lerpP(a, b, from), lerpP(a, b, to), ra, rb);
+/** Capsula lungo un segmento, spostata di `off` sulla sua normale. */
+function mus(a, b, ra, rb, from, to, off = 0) {
+  const dx = b[0] - a[0], dy = b[1] - a[1];
+  const d = Math.hypot(dx, dy) || 0.001;
+  const nx = -dy / d, ny = dx / d;
+  const p = lerpP(a, b, from), q = lerpP(a, b, to);
+  return capsule([p[0] + nx * off, p[1] + ny * off], [q[0] + nx * off, q[1] + ny * off], ra, rb);
+}
 
+/* Ogni gruppo è descritto su un lato del corpo; `L` porta le articolazioni di
+   quel lato, così di fronte si disegnano entrambi. off < 0 = lato anteriore. */
+const SHAPES = {
+  trap: (s, L) => mus(s.neck, L.sh, 4.4, 5.2, 0.12, 1, 1.2),
+  delt: (s, L) => mus(L.sh, L.elbow, 5.9, 4.6, -0.14, 0.26),
+  pec: (s, L) => mus(s.sh, s.hip, 7.4, 5.8, 0.04, 0.36, -2.6),
+  lat: (s, L) => mus(s.sh, s.hip, 6.8, 3.2, 0.1, 0.62, 2.8),
+  abs: (s) => [0.44, 0.58, 0.72].map((t) => mus(s.sh, s.hip, 4.3, 4.3, t, t + 0.055, -1.6)).join(' '),
+  bi: (s, L) => mus(L.sh, L.elbow, 4.4, 3.2, 0.3, 0.95, -1.3),
+  tri: (s, L) => mus(L.sh, L.elbow, 4.2, 3, 0.26, 0.92, 1.5),
+  fore: (s, L) => mus(L.elbow, L.hand, 3.6, 2.3, 0.08, 0.8, -0.6),
+  quad: (s, L) => mus(L.hip, L.knee, 6.6, 4.6, 0.14, 0.96, -1.5),
+  ham: (s, L) => mus(L.hip, L.knee, 5.8, 4.2, 0.18, 0.92, 2),
+  glute: (s, L) => mus(L.hip, L.knee, 6.8, 5.4, -0.1, 0.22, 2.6),
+  calf: (s, L) => mus(L.knee, L.ankle, 4.7, 2.6, 0.04, 0.6, 1.6),
+};
+
+/** Lato vicino e, nelle viste frontali, anche quello lontano. */
+function sides(sk, front) {
+  const near = { sh: sk.shR, elbow: sk.elbow, hand: sk.hand, hip: sk.hipR, knee: sk.knee, ankle: sk.ankle };
+  if (!front) return [near];
+  return [{ sh: sk.shL, elbow: sk.elbow2, hand: sk.hand2, hip: sk.hipL, knee: sk.knee2, ankle: sk.ankle2 }, near];
+}
+
+/** Non si ripetono a destra e a sinistra. */
+const CENTRALI = new Set(['pec', 'lat', 'abs']);
+/** Descrivono il profilo del tronco: di fronte farebbero una macchia centrale. */
+const SOLO_PROFILO = new Set(['pec', 'lat']);
+
+/** Ordine di disegno: prima i piani profondi, poi quelli in rilievo. */
+const SHAPE_ORDER = ['glute', 'ham', 'quad', 'calf', 'lat', 'pec', 'abs', 'trap', 'tri', 'bi', 'delt', 'fore'];
+
+/** Dal muscolo dell'esercizio al gruppo da accendere. */
 const FOCUS = {
-  petto: (s) => seg(s.sh, s.hip, 10, 9, 0.04, 0.4),
-  dorso: (s) => seg(s.sh, s.hip, 10.2, 9.2, 0.08, 0.55),
-  spalle: (s) => seg(s.shR, s.elbow, 6.4, 5.2, 0, 0.3),
-  trapezi: (s) => seg(s.sh, s.neck, 6.6, 4.6, 0, 1),
-  bicipiti: (s) => seg(s.shR, s.elbow, 5, 4.1),
-  tricipiti: (s) => seg(s.shR, s.elbow, 5, 4.1),
-  avambracci: (s) => seg(s.elbow, s.hand, 4, 3.1),
-  quadricipiti: (s) => seg(s.hipR, s.knee, 7.8, 5.7),
-  femorali: (s) => seg(s.hipR, s.knee, 7.8, 5.7),
-  adduttori: (s) => seg(s.hipR, s.knee, 7.8, 5.7, 0.2, 0.9),
-  abduttori: (s) => seg(s.hipR, s.knee, 7.8, 5.7, 0.2, 0.9),
-  glutei: (s) => seg(s.hip, s.knee, 9.4, 7.6, 0, 0.24),
-  polpacci: (s) => seg(s.knee, s.ankle, 5.4, 3.7, 0.08, 0.72),
-  addome: (s) => seg(s.hip, s.sh, 9.4, 9.8, 0.1, 0.62),
-  lombari: (s) => seg(s.hip, s.sh, 9.6, 9.4, 0.02, 0.46),
+  petto: ['pec'], dorso: ['lat'], spalle: ['delt'], trapezi: ['trap'],
+  bicipiti: ['bi'], tricipiti: ['tri'], avambracci: ['fore'],
+  quadricipiti: ['quad'], femorali: ['ham'], glutei: ['glute'], polpacci: ['calf'],
+  addome: ['abs'], lombari: ['lat'], adduttori: ['quad'], abduttori: ['quad'],
 };
 
 /* ------------------------------------------------------------ rendering -- */
@@ -736,8 +767,10 @@ export function mountFigure(host, src, { period = 2600, cls = 'exfig', cue = tru
   // arto anteriore
   const fArm = pathEl(gFront, 'b-fill'), fFore = pathEl(gFront, 'b-fill'), fHand = circ(gFront, 'b-fill', R.hand);
   const fThigh = pathEl(gFront, 'b-fill'), fShin = pathEl(gFront, 'b-fill'), fFoot = pathEl(gFront, 'b-fill');
-  // muscolo che lavora, sopra al corpo
-  const focusP = pathEl(gFocus, 'b-focus');
+  // anatomia: un contorno per gruppo, più il gruppo acceso ridisegnato pieno
+  // due copie per gruppo: nelle viste frontali servono destra e sinistra
+  const musEl = Object.fromEntries(SHAPE_ORDER.map((k) => [k, [pathEl(gFocus, 'b-mus'), pathEl(gFocus, 'b-mus')]]));
+  const focusEls = [pathEl(gFocus, 'b-focus'), pathEl(gFocus, 'b-focus')];
   // guida della schiena neutra
   const spineL = line(gCue, 'b-spine', 1.6);
 
@@ -751,8 +784,6 @@ export function mountFigure(host, src, { period = 2600, cls = 'exfig', cue = tru
       const u = makeProp(target, spec, eq);
       if (u) propUpd.push(u);
     }
-    const f = FOCUS[muscles[0]];
-    focusP.style.display = cue && f ? '' : 'none';
     spineL.style.display = cue && pat.spine ? '' : 'none';
   }
   build();
@@ -808,7 +839,27 @@ export function mountFigure(host, src, { period = 2600, cls = 'exfig', cue = tru
     bShin.setAttribute('d', capsule(sk.knee2, sk.ankle2, R.shin[0], R.shin[1]));
     bFoot.setAttribute('d', capsule(sk.ankle2, sk.toe2, R.foot[0], R.foot[1]));
 
-    if (focusP.style.display !== 'none') focusP.setAttribute('d', FOCUS[muscles[0]](sk));
+    const acceso = cue ? FOCUS[muscles[0]] || [] : [];
+    const lati = sides(sk, front);
+    for (const k of SHAPE_ORDER) {
+      const doppio = !CENTRALI.has(k);
+      const on = acceso.includes(k);
+      const ok = !(front && SOLO_PROFILO.has(k));
+      musEl[k].forEach((el, n) => {
+        const L = lati[doppio ? n : lati.length - 1];
+        const usa = ok && L && (doppio || n === lati.length - 1);
+        el.style.display = usa && !on ? '' : 'none';
+        if (usa) el.setAttribute('d', SHAPES[k](sk, L));
+      });
+    }
+    const k0 = acceso[0];
+    focusEls.forEach((el, n) => {
+      const doppio = k0 && !CENTRALI.has(k0);
+      const L = lati[doppio ? n : lati.length - 1];
+      const usa = k0 && L && (doppio || n === lati.length - 1);
+      el.style.display = usa ? '' : 'none';
+      if (usa) el.setAttribute('d', SHAPES[k0](sk, L));
+    });
     if (spineL.style.display !== 'none') setLine(spineL, lerpP(sk.hip, sk.sh, -0.08), lerpP(sk.hip, sk.neck, 1.02));
 
     shadow.setAttribute('cx', ((sk.ankle[0] + sk.ankle2[0]) / 2).toFixed(1));

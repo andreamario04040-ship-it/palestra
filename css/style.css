@@ -1076,7 +1076,10 @@ body.kb-open .tabbar { display: none; }
   stroke: var(--txt); stroke-width: 6; stroke-linejoin: round; opacity: .9;
 }
 .exfig .b-head { fill: var(--txt); opacity: .92; }
-.exfig .b-focus { fill: var(--acc); opacity: .5; }            /* muscolo che lavora */
+/* I muscoli sono contorni scuri sul corpo chiaro: è così che si legge
+   l'anatomia nelle tavole degli esercizi. Quello che lavora va in rosso. */
+.exfig .b-mus { fill: #0a0b0f; opacity: .11; }
+.exfig .b-focus { fill: #e03a2f; stroke: #8f1d16; stroke-width: .9; opacity: .95; }
 .exfig .b-spine { stroke: var(--acc); opacity: .9; stroke-dasharray: 3.5 3; }
 .exfig .b-shadow { fill: var(--txt); opacity: .05; }
 
