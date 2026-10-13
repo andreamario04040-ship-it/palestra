@@ -1,6 +1,6 @@
 /* Bootstrap, router e shell dell'applicazione.
 
-   Struttura: #app è alto quanto la finestra (100dvh) ed è una colonna flex.
+   Struttura: #app è fisso a `inset: 0` ed è una colonna flex.
    Lo scroll avviene dentro #view, non sulla pagina: così la tab bar è un
    elemento di flusso ancorato in fondo alla colonna e non può "staccarsi"
    dal bordo inferiore, cosa che su iOS succede agli elementi `position:fixed`
@@ -8,6 +8,7 @@
 
 import { S, load, save, sub, buildIndex } from './lib/store.js';
 import { registerCustom } from './data/exercises.js';
+import { TEMPLATES, buildFromTemplate } from './data/templates.js';
 import { $, on, audioUnlock, closeSheet, sheetOpen, initKeyboard } from './lib/dom.js';
 import { icon } from './lib/icons.js';
 import { clearFigures } from './lib/anim.js';
@@ -98,6 +99,21 @@ function syncTabs() {
   }
 }
 
+/* --------------------------------------------------------- prima accensione */
+
+/** Alla prima apertura, se non c'è nessuna scheda, ne carichiamo una pronta. */
+function seedRoutine() {
+  if (S.meta.seeded || S.routines.length) return;
+  const tpl = TEMPLATES.find((t) => t.key === 'andrea');
+  if (tpl) {
+    const r = buildFromTemplate(tpl);
+    S.routines.push(r);
+    S.activeRoutineId = r.id;
+  }
+  S.meta.seeded = true;
+  save();
+}
+
 /* ------------------------------------------------------- viewport corto --- */
 
 /**
@@ -173,6 +189,7 @@ async function boot() {
   appEl.innerHTML = shell();
 
   await load();
+  seedRoutine();
   registerCustom(S.customEx || []);
   buildIndex();
   applyTheme();

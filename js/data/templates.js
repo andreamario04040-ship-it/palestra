@@ -3,9 +3,57 @@
 import { uid } from '../lib/dom.js';
 import { matchEx, makeCustom, norm } from './exercises.js';
 
-const row = (exId, sets, reps, rest, note = '') => ({ id: uid(), exId, sets, reps, rest, note, superset: null });
+const row = (exId, sets, reps, rest, note = '', superset = null) => ({ id: uid(), exId, sets, reps, rest, note, superset });
 
 export const TEMPLATES = [
+  {
+    key: 'andrea',
+    name: 'Scheda di Andrea',
+    tag: 'Min-Max Phase 2 · 4 giorni',
+    desc: 'Poche serie ma portate a cedimento. Upper, Lower, 1-2 giorni di riposo, Push, Pull, 1-2 giorni di riposo. '
+      + 'Il RIR indicato nelle note dice quante ripetizioni lasciare in canna: RIR 0 vuol dire fino a cedimento. '
+      + 'Quando riesci a fare tutte le serie al limite alto del range, la volta dopo aumenta il carico. '
+      + 'Struttura adattata dal Min-Max Phase 2 di Jeff Nippard.',
+    days: [
+      { name: 'Upper', ex: [
+        row('chest-press', 2, '4-6', 150, 'Risc. 2-3 serie · RIR 0 · 1 secondo di fermo in basso mantenendo la tensione sui pettorali.'),
+        row('chest-press', 1, '20', 150, 'Serie da 20 con carico ridotto, subito dopo le due pesanti · RIR 0.'),
+        row('pullover-macchina', 1, '8-10', 90, 'Risc. 1-2 · RIR 0 · ripetizioni fluide, allungamento profondo dei dorsali nel punto alto.'),
+        row('pullover-macchina', 1, '20', 90, 'Serie da 20 con carico ridotto · RIR 0.'),
+        row('pectoral-machine', 2, '10-12', 90, 'Risc. 0-1 · RIR 0 · 1 secondo di fermo in basso. Dalla settimana 8 aggiungi myo-reps sull’ultima serie.'),
+        row('rematore-tbar', 2, '6-8', 150, 'Risc. 1-2 · RIR 0 · gomiti aperti a circa 45°, stringi forte le scapole in alto. Dalla settimana 8 aggiungi myo-reps sull’ultima serie.'),
+        row('y-raise', 3, '10-12', 90, 'Risc. 0-1 · RIR 0 · panca a 30° con la schiena appoggiata, porta i manubri in alto e in fuori a formare una Y.'),
+        row('curl-ez', 2, '4-6', 45, 'Risc. 1 · RIR 0 · un po’ di slancio per salire, ma controlla la discesa. Si alterna con lo skull crusher.', 'ss-upper'),
+        row('french-press', 2, '6-8', 45, 'Risc. 1 · RIR 0 · allungamento profondo sui tricipiti in tutta la discesa, 1 secondo di fermo in basso.', 'ss-upper')] },
+      { name: 'Lower', ex: [
+        row('leg-curl-seduto', 3, '6-8', 90, 'Risc. 1-2 · RIR 0 · inclina il busto in avanti sulla macchina per allungare al massimo i femorali.'),
+        row('hack-squat', 2, '4-6', 180, 'Risc. 2-3 · RIR 1 sulla prima, 2 sulla seconda · negativa controllata, poi esplodi in salita.'),
+        row('leg-extension', 2, '6-8', 90, 'Risc. 0-1 · RIR 0 · schienale il più indietro possibile, afferra forte le maniglie per tenere il bacino giù.'),
+        row('leg-extension', 1, '20', 90, 'Serie da 20 con carico ridotto · RIR 0.'),
+        row('affondi-camminata', 1, '10 per gamba', 90, 'Risc. 0-1 · RIR 0 · passi medi, riduci al minimo la spinta della gamba dietro.'),
+        row('calf-raise-piedi', 3, '10-12', 90, 'Risc. 0-1 · RIR 0 · 1-2 secondi di fermo in basso, rulla la caviglia sull’avampiede invece di spingere solo in punta.'),
+        row('kickback-glutei', 1, '30', 90, 'Risc. 0-1 · RIR 0 · 30 ripetizioni. Se preferisci lavorare lombari e femorali, sostituisci con l’hyperextension.')] },
+      { name: 'Push', ex: [
+        row('shoulder-press-macchina', 2, '4-6', 150, 'Risc. 2-3 · RIR 0 poi 1 · i gomiti devono scendere almeno a 90°, ripetizioni fluide.'),
+        row('panca-manubri', 1, '10', 150, 'Risc. 2-3 · RIR 0 · 1 secondo di fermo in basso mantenendo la tensione sui pettorali.'),
+        row('panca-manubri', 1, '20', 150, 'Serie da 20 con carico ridotto · RIR 0.'),
+        row('leg-extension', 1, '20', 90, 'Risc. 0-1 · RIR 0 · una gamba alla volta, schienale indietro e maniglie strette forte.'),
+        row('alzate-laterali-macchina', 1, '10', 90, 'Risc. 0-1 · RIR 0 · resisti alla negativa e non fermarti in basso.'),
+        row('alzate-laterali-macchina', 1, '20', 90, 'Serie da 20 con carico ridotto · RIR 0.'),
+        row('croci-cavi', 2, '10-12', 90, 'Risc. 0-1 · RIR 0 · cerca un allungamento profondo dei pettorali in basso.'),
+        row('pushdown-barra', 2, '4-6', 90, 'Risc. 0-1 · RIR 0 · corda o barra, quella che ti è più comoda.')] },
+      { name: 'Pull', ex: [
+        row('trazioni', 3, '4-6', 150, 'Risc. 1-2 · RIR 0, poi 1 e 1 · presa larga · negativa lenta di 2-3 secondi.'),
+        row('stacco-rumeno', 2, '6-8', 150, 'Risc. 2-3 · RIR 1 sulla prima, 2 sulla seconda · schiena piatta e ginocchia appena flesse.'),
+        row('lat-machine-presa-stretta', 1, '10', 150, 'Risc. 1-2 · RIR 0 · inclinati indietro di circa 15° e porta i gomiti in basso stringendo le scapole.'),
+        row('lat-machine-presa-stretta', 1, '20', 150, 'Serie da 20 con carico ridotto · RIR 0.'),
+        row('rematore-macchina', 2, '4-6', 150, 'Risc. 1-2 · RIR 0 · gomiti aperti a 45°, stringi forte le scapole in alto.'),
+        row('reverse-pec-deck', 1, '20', 90, 'Risc. 0-1 · RIR 0 · un braccio alla volta, disegna il semicerchio più ampio possibile.'),
+        row('reverse-pec-deck', 1, '10', 90, 'RIR 0 · un braccio alla volta, carico più alto della serie da 20.'),
+        row('curl-martello', 2, '6-8', 90, 'Risc. 0-1 · RIR 0 · alla panca Scott con presa a martello, ripetizioni fluide.'),
+        row('crunch-cavi', 2, '6-8', 90, 'Risc. 0-1 · RIR 0 · arrotonda la zona lombare mentre ti chiudi.')] },
+    ],
+  },
   {
     key: 'fullbody3',
     name: 'Full Body 3x',

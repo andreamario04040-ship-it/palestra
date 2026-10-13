@@ -125,6 +125,13 @@ export const EXERCISES = [
     e: ['Iperestendere la schiena.', 'Scendere oltre la propria mobilità di spalla.'],
   },
   {
+    id: 'pullover-macchina', n: 'Pullover alla macchina', a: ['machine lat pullover', 'lat pullover', 'pullover macchina'],
+    m: ['dorso'], s: ['petto', 'tricipiti'],
+    eq: 'macchina', p: 'pullover', rr: '8-12', rest: 90,
+    c: ['Schiena appoggiata, gomiti fissi e leggermente flessi.', 'Cerca un allungamento profondo dei dorsali nel punto alto.', 'Ripetizioni fluide e controllate, senza strappi.'],
+    e: ['Spingere con i tricipiti invece di tirare con i dorsali.', 'Accorciare il movimento nella parte di allungamento.'],
+  },
+  {
     id: 'panca-smith', n: 'Panca piana al multipower', a: ['smith bench'], m: ['petto'], s: ['tricipiti'],
     eq: 'smith', p: 'horizPush', rr: '8-12', rest: 120,
     c: ['Posiziona la panca così che la barra scenda a metà petto.', 'Ottimo per lavorare vicino al cedimento in sicurezza.'],
@@ -259,6 +266,20 @@ export const EXERCISES = [
     eq: 'cavi', p: 'lateralRaise', rr: '12-20', rest: 60,
     c: ['Cavo basso, passa davanti al corpo: tensione costante.', 'Un braccio alla volta per massimo controllo.'],
     e: ['Inclinare troppo il busto.'],
+  },
+  {
+    id: 'alzate-laterali-macchina', n: 'Alzate laterali alla macchina', a: ['machine lateral raise', 'lateral machine'],
+    m: ['spalle'], s: [],
+    eq: 'macchina', p: 'lateralRaise', rr: '10-20', rest: 60,
+    c: ['Allinea l’articolazione della spalla al perno della macchina.', 'Resisti alla negativa a ogni ripetizione.', 'Non fermarti in basso: tieni tensione costante.'],
+    e: ['Scaricare la tensione appoggiando i pesi tra una ripetizione e l’altra.'],
+  },
+  {
+    id: 'y-raise', n: 'Y-raise su panca inclinata', a: ['incline y raise', 'y raise', 'alzate a y'],
+    m: ['spalle'], s: ['trapezi', 'dorso'],
+    eq: 'manubri', p: 'frontRaise', rr: '10-15', rest: 60,
+    c: ['Panca inclinata a 30°, schiena appoggiata.', 'Porta i manubri in alto e in fuori formando una Y.', 'Pollici verso l’alto, salita fino alla linea delle orecchie.'],
+    e: ['Usare carichi che costringono a slanciare con il busto.'],
   },
   {
     id: 'alzate-frontali', n: 'Alzate frontali', a: ['front raise'], m: ['spalle'], s: [],
