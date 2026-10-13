@@ -3,22 +3,6 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
-<script>
-/* iOS in standalone disegna a tutto schermo ma dimensiona il viewport come
-   "schermo meno la status bar": in fondo resta una striscia morta alta quanto
-   `safe-area-inset-top`, dove nessun elemento può arrivare. `height=device-height`
-   riallinea il viewport allo schermo. In Safari invece quello spazio se lo prende
-   davvero la barra del browser, quindi lì il meta non si tocca. */
-(function () {
-  var pwa = navigator.standalone === true ||
-            (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
-  if (!pwa) return;
-  var m = document.querySelector('meta[name="viewport"]');
-  if (!m) return;
-  m.setAttribute('data-base', m.getAttribute('content'));   // per tornare indietro se allunga troppo
-  m.setAttribute('content', 'width=device-width, height=device-height, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no');
-})();
-</script>
 <title>Palestra</title>
 <meta name="description" content="Diario di allenamento in palestra: schede, timer di recupero, progressione dei carichi e statistiche. Tutto in locale sul tuo telefono.">
 <meta name="theme-color" content="#0a0b0f">
@@ -28,7 +12,11 @@
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<!-- `black` e non `black-translucent`: con la status bar trasparente iOS disegna
+     a tutto schermo ma accorcia il viewport dell'altezza della status bar, e in
+     fondo resta una striscia irraggiungibile. iOS legge questo meta quando l'app
+     viene aggiunta alla Home, non a ogni avvio. -->
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Palestra">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <link rel="icon" href="icons/favicon.svg" type="image/svg+xml">

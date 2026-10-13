@@ -5,7 +5,7 @@ import { esc, $, $$, on, openSheet, closeSheet, confirmSheet, promptSheet, toast
 import { icon } from '../lib/icons.js';
 import { applyTheme, render, go, checkForUpdate, viewportInfo } from '../app.js';
 
-const VERSION = '1.3.0';
+const VERSION = '1.3.1';
 
 function toggleRow(key, title, sub, group = 'settings') {
   const v = group === 'settings' ? S.settings[key] : S[group][key];
@@ -13,6 +13,15 @@ function toggleRow(key, title, sub, group = 'settings') {
     <span class="grow"><span class="t">${esc(title)}</span>${sub ? `<span class="s">${esc(sub)}</span>` : ''}</span>
     <span class="switch ${v ? 'on' : ''}"></span>
   </div>`;
+}
+
+/** Stato del viewport in una riga: dice se la barra in basso è a posto. */
+function schermoDesc() {
+  const v = viewportInfo;
+  if (!v.pwa) return `${v.view} di ${v.screen} punti · nel browser`;
+  if (v.fixed) return `${v.view} di ${v.screen} punti · corretto`;
+  if (v.gap) return `${v.view} di ${v.screen} punti · ne mancano ${v.gap}`;
+  return `${v.view} di ${v.screen} punti · tutto pieno`;
 }
 
 function stamp() {
@@ -23,11 +32,11 @@ function stamp() {
 async function doExport() {
   const json = exportJSON();
   const file = new File([json], `palestra-backup-${stamp()}.json`, { type: 'application/json' });
-  S.meta.lastBackup = new Date().toISOString();
-  save();
+  const segna = () => { S.meta.lastBackup = new Date().toISOString(); save(); };
   if (navigator.canShare?.({ files: [file] })) {
-    try { await navigator.share({ files: [file], title: 'Backup Palestra' }); return; } catch { /* annullato */ }
+    try { await navigator.share({ files: [file], title: 'Backup Palestra' }); segna(); render(); return; } catch { /* annullato */ }
   }
+  segna();
   const url = URL.createObjectURL(file);
   const a = document.createElement('a');
   a.href = url; a.download = file.name;
@@ -153,7 +162,7 @@ export default {
           <span class="grow"><span class="t">Aggiorna l’app</span><span class="s">Scarica l’ultima versione e ricarica</span></span>
           <span class="pill">${VERSION}</span></button>
         <div class="row"><span class="avatar">${icon('phone', 19)}</span>
-          <span class="grow"><span class="t">Schermo</span><span class="s">${viewportInfo.view} di ${viewportInfo.screen} punti${viewportInfo.gap ? ` · ne mancano ${viewportInfo.gap} · css ${viewportInfo.css}` : ' · tutto pieno'}</span></span></div>
+          <span class="grow"><span class="t">Schermo</span><span class="s">${schermoDesc()}</span></span></div>
       </div></div>
       <div style="height:16px"></div>`;
   },
@@ -236,7 +245,17 @@ export function installSheet() {
   openSheet({
     title: 'Installa sull’iPhone',
     body: standalone
-      ? `<div class="coach" style="margin:0">${icon('checkCircle', 17)}<div>L’app è già installata sulla schermata Home. Funziona anche senza connessione.</div></div>`
+      ? `<div class="coach" style="margin:0">${icon('checkCircle', 17)}<div>L’app è già installata sulla schermata Home. Funziona anche senza connessione.</div></div>
+        <div class="section-title" style="margin-top:18px">Reinstallare</div>
+        <p class="fs13 muted" style="margin:0 0 12px">iOS legge l’aspetto della status bar quando aggiungi l’app alla Home, non a ogni avvio: per cambiarlo serve rifare l’installazione. Rimuovendo l’app iOS può cancellare i dati del sito, quindi il backup non è facoltativo.</p>
+        <ol class="cues" style="padding-left:0">
+          <li><span class="n">1</span><span><b>Esporta il backup</b> e salvalo in File o su iCloud Drive.</span></li>
+          <li><span class="n">2</span><span>Tieni premuta l’icona sulla Home e scegli <b>Rimuovi app</b>.</span></li>
+          <li><span class="n">3</span><span>Apri il sito in <b>Safari</b>, Condividi ${icon('share', 15)} → <b>Aggiungi a Home</b>.</span></li>
+          <li><span class="n">4</span><span>Apri l’app, <b>Importa backup</b> e scegli <b>Sostituisci tutto</b>.</span></li>
+        </ol>
+        <div class="coach" style="margin-top:14px">${icon('bulb', 17)}
+          <div>Alla riapertura, qui sotto “Schermo” deve dire <b>tutto pieno</b>.</div></div>`
       : `<ol class="cues" style="padding-left:0">
           <li><span class="n">1</span><span>Apri questa pagina in <b>Safari</b> (non in un’altra app).</span></li>
           <li><span class="n">2</span><span>Tocca il pulsante <b>Condividi</b> ${icon('share', 15)} in basso.</span></li>

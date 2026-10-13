@@ -123,9 +123,9 @@ function seedRoutine() {
  * misuriamo se ha funzionato davvero, così le impostazioni possono dirlo e nel
  * caso peggiore smettiamo di sprecare anche il padding della safe area.
  */
-export const viewportInfo = { screen: 0, view: 0, gap: 0, pwa: false, css: 0 };
+export const viewportInfo = { screen: 0, view: 0, gap: 0, top: 0, pwa: false, css: 0, fixed: false };
 
-/** Legge una env() in pixel: serve a conoscere le safe area prima di cambiarle. */
+/** Legge una env() in pixel: serve a sapere com'è inquadrato il viewport. */
 function probeInset(side) {
   const d = document.createElement('div');
   d.style.cssText = `position:fixed;left:-9999px;top:0;width:1px;height:env(safe-area-inset-${side},0px);pointer-events:none`;
@@ -150,42 +150,40 @@ function measureViewport() {
   const tall = Math.max(screen.width, screen.height);   // altezza in verticale
   let h = Math.round(window.innerHeight);
   const portrait = window.innerWidth < h;
-
-  // Assicurazione: se `height=device-height` avesse allungato il viewport oltre
-  // lo schermo, la barra finirebbe sotto il bordo. Meglio tornare al meta di
-  // partenza che peggiorare le cose.
-  const meta = document.querySelector('meta[name="viewport"]');
-  const base = meta?.getAttribute('data-base');
-  if (pwa && portrait && base && h > tall + 4) {
-    meta.setAttribute('content', base);
-    meta.removeAttribute('data-base');
-    h = Math.round(window.innerHeight);
-  }
+  const top = probeInset('top');
   const root = document.documentElement;
   let gap = pwa && portrait ? Math.max(0, tall - h) : 0;
 
-  /* Se il viewport resta corto con `viewport-fit=cover`, togliamo il cover:
-     iOS allora inquadra il viewport dentro le safe area invece di disegnare a
-     tutto schermo lasciando fuori il fondo. La barra finisce appoggiata al
-     bordo dell'area utile e sotto resta solo la striscia dell'home indicator,
-     esattamente come in un'app nativa. */
-  if (gap > 8 && meta && !meta.dataset.noCover) {
-    const bottomInset = probeInset('bottom');
+  /* Un viewport più corto dello schermo non è di per sé un problema: con la
+     status bar opaca iOS parte sotto di essa, ed è giusto così. È rotto solo
+     quando disegna a tutto schermo in alto (inset superiore > 0) e insieme
+     accorcia il fondo esattamente di quell'inset: quella striscia resta fuori
+     dalla portata di qualsiasi elemento. */
+  const broken = gap > 8 && top > 8 && Math.abs(gap - top) <= 8;
+
+  /* Rimedio senza reinstallare: tolto `viewport-fit=cover` iOS inquadra il
+     viewport dentro le safe area invece di disegnare a tutto schermo. */
+  const meta = document.querySelector('meta[name="viewport"]');
+  if (broken && meta && !meta.dataset.noCover) {
+    const bottom = probeInset('bottom');
     meta.dataset.noCover = '1';
     meta.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no');
     root.classList.add('vp-inset');
     h = Math.round(window.innerHeight);
-    gap = Math.max(0, bottomInset || 0);
+    gap = Math.max(0, bottom || 0);
   }
 
+  const inset = root.classList.contains('vp-inset');
   viewportInfo.pwa = pwa;
   viewportInfo.screen = tall;
   viewportInfo.view = h;
-  viewportInfo.gap = pwa && portrait ? Math.max(0, tall - h) : 0;
+  viewportInfo.top = top;
+  viewportInfo.gap = broken || inset ? gap : 0;
+  viewportInfo.fixed = inset;
   viewportInfo.css = Math.max(...['vh', 'lvh', 'dvh', 'svh'].map(probeUnit));
 
-  root.classList.toggle('vp-short', gap > 8);
-  root.style.setProperty('--vp-gap', gap + 'px');
+  root.classList.toggle('vp-short', viewportInfo.gap > 8);
+  root.style.setProperty('--vp-gap', viewportInfo.gap + 'px');
 }
 
 /* --------------------------------------------------------- solo verticale */
