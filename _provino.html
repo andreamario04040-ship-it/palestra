@@ -1,0 +1,35 @@
+<!doctype html><html lang="it" data-theme="dark"><head><meta charset="utf-8">
+<title>Provino animazioni</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+  html, body { overflow: auto; height: auto; position: static; }
+  body { padding: 12px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
+  .cell { background: var(--surface); border-radius: 12px; padding: 4px; }
+  .cell h4 { font-size: 10.5px; margin: 0; color: var(--txt-2); font-weight: 700; text-align: center; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; }
+  .two .exfig { max-width: 100%; height: 108px; }
+  body.big .grid { grid-template-columns: 1fr; }
+  body.big .two .exfig { height: 300px; }
+  body.big .cell h4 { font-size: 15px; padding: 4px; }
+</style></head><body>
+<div class="grid" id="g"></div>
+<script type="module">
+import { PATTERNS, mountFigure } from './js/lib/anim.js';
+import { EXERCISES } from './js/data/exercises.js';
+const g = document.getElementById('g');
+const byPat = {};
+for (const e of EXERCISES) { const k = e.p + '|' + e.eq; if (!byPat[k]) byPat[k] = e; }
+const q = new URLSearchParams(location.search);
+const only = q.get('p');
+if (q.get('big')) document.body.classList.add('big');
+for (const k of Object.keys(byPat).sort()) {
+  const ex = byPat[k];
+  if (only && !only.split(',').includes(ex.p)) continue;
+  const c = document.createElement('div'); c.className = 'cell';
+  c.innerHTML = `<h4>${ex.p} · ${ex.eq} · ${ex.n || ''}</h4><div class="two"><div class="a"></div><div class="b"></div></div>`;
+  g.appendChild(c);
+  mountFigure(c.querySelector('.a'), ex, { cls: 'exfig', phase: 0 });
+  mountFigure(c.querySelector('.b'), ex, { cls: 'exfig', phase: 0.42 });
+}
+</script></body></html>

@@ -7,7 +7,7 @@
 
 import {
   S, save, addSession, idx, prOf, historyOf, sessionVolume, sessionSets,
-  getRoutine, isWork, SET_TYPES, newRow,
+  getRoutine, isWork, SET_TYPES, MYO_REST, newRow,
 } from '../lib/store.js';
 import { getEx, stepFor, MUSCLES } from '../data/exercises.js';
 import {
@@ -332,7 +332,7 @@ function refresh({ figure = true } = {}) {
   if (host && e) {
     if (figure || figEx !== e.exId) {
       fig?.destroy();
-      fig = mountFigure(host, getEx(e.exId).p, { cls: 'exfig' });
+      fig = mountFigure(host, getEx(e.exId), { cls: 'exfig' });
       figEx = e.exId;
     }
   }
@@ -407,6 +407,25 @@ function completeSet(k = null) {
       w.cursor.set = nextInGroup.e.sets.findIndex((y) => !y.done);
       refresh({ figure: true });
       startRest(e.rest || S.settings.restDefault);
+      return;
+    }
+  }
+
+  // --- myo-reps: dopo l'attivazione si continua a mini-serie finché reggono ---
+  if (s.type === 'm') {
+    const fatte = e.sets.filter((x) => x.type === 'm' && x.done).length;
+    if (!e.sets.some((x) => !x.done) && fatte < 7) {
+      e.sets.push({
+        id: uid(), weight: s.weight, rpe: null, type: 'm', done: false,
+        reps: Math.max(3, Math.round((Number(s.reps) || 9) / 3)),
+      });
+    }
+    const next = e.sets.findIndex((x) => !x.done);
+    if (next >= 0) {
+      w.cursor.set = next;
+      refresh({ figure: false });
+      toast(`${icon('flame', 15)} Mini-serie: 3-5 ripetizioni dopo il respiro`, '', 2200);
+      startRest(MYO_REST);
       return;
     }
   }

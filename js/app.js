@@ -125,6 +125,16 @@ function seedRoutine() {
  */
 export const viewportInfo = { screen: 0, view: 0, gap: 0, pwa: false, css: 0 };
 
+/** Legge una env() in pixel: serve a conoscere le safe area prima di cambiarle. */
+function probeInset(side) {
+  const d = document.createElement('div');
+  d.style.cssText = `position:fixed;left:-9999px;top:0;width:1px;height:env(safe-area-inset-${side},0px);pointer-events:none`;
+  document.body.appendChild(d);
+  const v = Math.round(d.getBoundingClientRect().height);
+  d.remove();
+  return v;
+}
+
 /** Quanto vale davvero `100<unit>` qui: non sempre coincide con innerHeight. */
 function probeUnit(unit) {
   const d = document.createElement('div');
@@ -151,15 +161,31 @@ function measureViewport() {
     meta.removeAttribute('data-base');
     h = Math.round(window.innerHeight);
   }
+  const root = document.documentElement;
+  let gap = pwa && portrait ? Math.max(0, tall - h) : 0;
+
+  /* Se il viewport resta corto con `viewport-fit=cover`, togliamo il cover:
+     iOS allora inquadra il viewport dentro le safe area invece di disegnare a
+     tutto schermo lasciando fuori il fondo. La barra finisce appoggiata al
+     bordo dell'area utile e sotto resta solo la striscia dell'home indicator,
+     esattamente come in un'app nativa. */
+  if (gap > 8 && meta && !meta.dataset.noCover) {
+    const bottomInset = probeInset('bottom');
+    meta.dataset.noCover = '1';
+    meta.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no');
+    root.classList.add('vp-inset');
+    h = Math.round(window.innerHeight);
+    gap = Math.max(0, bottomInset || 0);
+  }
+
   viewportInfo.pwa = pwa;
   viewportInfo.screen = tall;
   viewportInfo.view = h;
   viewportInfo.gap = pwa && portrait ? Math.max(0, tall - h) : 0;
   viewportInfo.css = Math.max(...['vh', 'lvh', 'dvh', 'svh'].map(probeUnit));
 
-  const root = document.documentElement;
-  root.classList.toggle('vp-short', viewportInfo.gap > 8);
-  root.style.setProperty('--vp-gap', viewportInfo.gap + 'px');
+  root.classList.toggle('vp-short', gap > 8);
+  root.style.setProperty('--vp-gap', gap + 'px');
 }
 
 /* --------------------------------------------------------- solo verticale */

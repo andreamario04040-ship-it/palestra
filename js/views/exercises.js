@@ -154,7 +154,7 @@ export function exerciseSheet(exId, { onAdd = null, foot = null } = {}) {
     body,
     foot: foot || (onAdd ? `<button class="btn primary block" data-add>${icon('plus', 19)} Aggiungi</button>` : null),
     onMount: (el) => {
-      const fig = mountFigure($('#exAnim', el), ex.p, { cls: 'exfig lg' });
+      const fig = mountFigure($('#exAnim', el), ex, { cls: 'exfig lg' });
       el.addEventListener('sheetdestroy', () => fig.destroy());
     },
   });

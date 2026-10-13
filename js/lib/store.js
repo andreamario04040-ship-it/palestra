@@ -157,13 +157,17 @@ const e1rm = (w, r) => (r <= 1 ? w : w * (1 + r / 30));
 export { e1rm };
 
 /* Tipi di serie (come nelle app di riferimento):
-   w = riscaldamento · n = normale · d = drop set · f = a cedimento        */
+   w = riscaldamento · n = normale · d = drop set · m = myo-reps · f = a cedimento */
 export const SET_TYPES = {
   w: { lab: 'W', name: 'Riscaldamento', desc: 'Non conta nel volume né nei record', cls: 'warm' },
   n: { lab: '', name: 'Normale', desc: 'Serie di lavoro', cls: '' },
   d: { lab: 'D', name: 'Drop set', desc: 'Scarico immediato senza recupero', cls: 'drop' },
+  m: { lab: 'M', name: 'Myo-reps', desc: 'Serie di attivazione, poi mini-serie da 3-5 con un respiro di recupero', cls: 'myo' },
   f: { lab: 'F', name: 'A cedimento', desc: 'Portata al limite', cls: 'fail' },
 };
+
+/** Recupero fra le mini-serie delle myo-reps: il tempo di 3-5 respiri. */
+export const MYO_REST = 20;
 
 /** Serie "di lavoro": esclude il riscaldamento (retrocompatibile con `warm`). */
 export const isWork = (s) => !!s && s.type !== 'w' && s.warm !== true;
