@@ -46,6 +46,13 @@
   --tabbar-h: 62px;
   --safe-t: env(safe-area-inset-top, 0px);
   --safe-b: env(safe-area-inset-bottom, 0px);
+  /* La barra non riserva tutti i 34pt dell'home indicator: con metà spazio le
+     icone restano libere ma il menù non sembra sollevato dal bordo. */
+  --safe-pad-b: max(6px, calc(var(--safe-b) * .55));
+  /* Le barre in basso devono avere una superficie riconoscibile: con uno
+     sfondo quasi identico alla pagina la striscia sotto le icone legge come
+     vuoto e la barra sembra sospesa a mezz'aria. */
+  --bar-bg: rgba(21, 25, 34, .94);
 
   --ease: cubic-bezier(.22, 1, .36, 1);
   --spring: cubic-bezier(.34, 1.56, .64, 1);
@@ -73,6 +80,7 @@
   --sh-2: 0 8px 24px -10px rgba(16, 20, 35, .18);
   --sh-3: 0 24px 60px -18px rgba(16, 20, 35, .3);
   --glow: 0 6px 24px -10px rgba(95, 143, 0, .5);
+  --bar-bg: rgba(255, 255, 255, .94);
   color-scheme: light;
 }
 
@@ -200,12 +208,13 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   align-items: center;
-  height: calc(var(--tabbar-h) + var(--safe-b));
-  padding-bottom: var(--safe-b);
-  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  height: calc(var(--tabbar-h) + var(--safe-pad-b));
+  padding-bottom: var(--safe-pad-b);
+  background: var(--bar-bg);
   backdrop-filter: saturate(180%) blur(22px);
   -webkit-backdrop-filter: saturate(180%) blur(22px);
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--line-2);
+  box-shadow: 0 -12px 26px -14px rgba(0, 0, 0, .9);
 }
 
 .tabbar button {
@@ -553,6 +562,32 @@ body.kb-open .sheet .sheet-foot { padding-bottom: 12px; }
 .sheet .sheet-foot { padding: 12px 18px calc(16px + var(--safe-b)); border-top: 1px solid var(--line); flex: none; display: flex; gap: 10px; }
 .sheet .sheet-foot .btn { flex: 1; }
 
+/* ------------------------------------------------------- solo verticale --- */
+
+/* iOS ignora sia `orientation` nel manifest sia `screen.orientation.lock()`:
+   in orizzontale l'unica strada è coprire l'app. Il limite sull'altezza lascia
+   passare desktop e tablet, dove l'orizzontale non è un problema. */
+#rotate { display: none; }
+
+@media (orientation: landscape) and (max-height: 600px) {
+  #rotate {
+    position: fixed; inset: 0;
+    z-index: 400;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    padding: 24px 32px;
+    background: var(--bg);
+    background-image: var(--bg-grad);
+    text-align: center;
+  }
+  #rotate svg { width: 44px; height: 44px; color: var(--acc); }
+  #rotate strong { display: block; font-size: 19px; font-weight: 750; letter-spacing: -.025em; }
+  #rotate span { display: block; margin-top: 3px; font-size: 14px; color: var(--txt-2); }
+}
+
 /* -------------------------------------------------------------- toast --- */
 
 #toasts {
@@ -792,9 +827,9 @@ body.kb-open .sheet .sheet-foot { padding-bottom: 12px; }
   flex: none;
   display: flex; gap: 8px;
   overflow-x: auto;
-  padding: 10px 14px calc(10px + var(--safe-b));
-  border-top: 1px solid var(--line);
-  background: color-mix(in srgb, var(--bg) 80%, transparent);
+  padding: 10px 14px calc(10px + var(--safe-pad-b));
+  border-top: 1px solid var(--line-2);
+  background: var(--bar-bg);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   scrollbar-width: none;

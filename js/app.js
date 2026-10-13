@@ -98,19 +98,14 @@ function syncTabs() {
   }
 }
 
-/* --------------------------------------------------------- altezza shell */
+/* --------------------------------------------------------- solo verticale */
 
 /**
- * Rete di sicurezza: `#app` è fisso con `inset: 0`, quindi dovrebbe già coprire
- * tutto il viewport. Se però il browser riporta un'altezza diversa (è successo
- * su iOS in standalone), la forziamo al valore misurato.
+ * Su Android/Chrome in standalone il blocco funziona davvero; iOS ignora sia
+ * questa API sia `orientation` nel manifest, lì ci pensa l'overlay in CSS.
  */
-function fitShell() {
-  if (!appEl || document.body.classList.contains('kb-open')) return;
-  const h = window.innerHeight;
-  if (!h) return;
-  const got = appEl.getBoundingClientRect().height;
-  appEl.style.height = Math.abs(got - h) > 2 ? h + 'px' : '';
+function lockPortrait() {
+  try { screen.orientation?.lock?.('portrait')?.catch?.(() => {}); } catch { /* non supportato */ }
 }
 
 /* ------------------------------------------------------------------ tema */
@@ -137,10 +132,7 @@ async function boot() {
 
   render();
   initKeyboard();
-  fitShell();
-  window.addEventListener('resize', fitShell);
-  window.addEventListener('orientationchange', () => setTimeout(fitShell, 250));
-  window.visualViewport?.addEventListener('resize', () => setTimeout(fitShell, 60));
+  lockPortrait();
 
   // scorciatoia dal manifest / link diretto
   if (new URLSearchParams(location.search).get('a') === 'start') {
