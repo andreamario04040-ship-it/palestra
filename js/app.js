@@ -8,7 +8,7 @@
 
 import { S, load, save, sub, buildIndex } from './lib/store.js';
 import { registerCustom } from './data/exercises.js';
-import { $, on, audioUnlock, toast, closeSheet, sheetOpen, initKeyboard } from './lib/dom.js';
+import { $, on, audioUnlock, closeSheet, sheetOpen, initKeyboard } from './lib/dom.js';
 import { icon } from './lib/icons.js';
 import { clearFigures } from './lib/anim.js';
 
@@ -161,18 +161,59 @@ async function boot() {
 
 /* ---------------------------------------------------------- service worker */
 
+/* Aggiornamenti: appena il nuovo service worker prende il controllo, la pagina
+   si ricarica da sola. Se è in corso un allenamento aspettiamo la fine, per non
+   interromperlo. L'utente non deve fare nulla e non c'è nessun avviso da
+   cogliere al volo. */
+
+let pendingUpdate = false;
+let updating = false;
+
+function applyUpdate() {
+  if (updating) return;
+  updating = true;
+  location.reload();
+}
+
+/** Forza il controllo e l'installazione di una nuova versione. */
+export async function checkForUpdate({ force = false } = {}) {
+  if (!('serviceWorker' in navigator)) { if (force) applyUpdate(); return 'nd'; }
+  const reg = await navigator.serviceWorker.getRegistration();
+  if (!reg) { if (force) applyUpdate(); return 'nd'; }
+  try { await reg.update(); } catch { /* offline */ }
+  if (reg.waiting) {
+    reg.waiting.postMessage('skipWaiting');
+    setTimeout(applyUpdate, 600);
+    return 'nuova';
+  }
+  if (force) {
+    // niente di nuovo: svuoto comunque la cache e ricarico pulito
+    try { for (const k of await caches.keys()) await caches.delete(k); } catch { /* ignore */ }
+    applyUpdate();
+  }
+  return 'aggiornata';
+}
+
 function registerSW() {
   if (!('serviceWorker' in navigator)) return;
+  const hadController = !!navigator.serviceWorker.controller;
+
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController) return;            // prima installazione: niente ricarica
+    if (isWorkoutOpen()) { pendingUpdate = true; return; }
+    applyUpdate();
+  });
+
+  // aggiornamento rimasto in sospeso durante un allenamento: lo applico al
+  // rientro nell'app, quando non c'è nulla da interrompere
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && pendingUpdate && !isWorkoutOpen()) applyUpdate();
+  });
+
   navigator.serviceWorker.register('./sw.js', { scope: './' }).then((reg) => {
-    reg.addEventListener('updatefound', () => {
-      const nw = reg.installing;
-      nw?.addEventListener('statechange', () => {
-        if (nw.state === 'installed' && navigator.serviceWorker.controller) {
-          const t = toast('Nuova versione disponibile · <b style="text-decoration:underline">aggiorna</b>', '', 8000);
-          t.style.pointerEvents = 'auto';
-          t.onclick = () => { nw.postMessage('skipWaiting'); location.reload(); };
-        }
-      });
+    // controlla a ogni ritorno in primo piano
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) reg.update().catch(() => { /* offline */ });
     });
   }).catch(() => { /* offline o non supportato */ });
 }

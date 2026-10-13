@@ -3,9 +3,9 @@
 import { S, save, exportJSON, importJSON, resetAll } from '../lib/store.js';
 import { esc, $, $$, on, openSheet, closeSheet, confirmSheet, promptSheet, toast, fmtWeight, fmtDate } from '../lib/dom.js';
 import { icon } from '../lib/icons.js';
-import { applyTheme, render, go } from '../app.js';
+import { applyTheme, render, go, checkForUpdate } from '../app.js';
 
-const VERSION = '1.1.0';
+const VERSION = '1.1.1';
 
 function toggleRow(key, title, sub, group = 'settings') {
   const v = group === 'settings' ? S.settings[key] : S[group][key];
@@ -149,8 +149,9 @@ export default {
           <span class="grow"><span class="t">Installa su iPhone</span><span class="s">Aggiungi alla schermata Home</span></span>${icon('chevR', 17)}</button>
         <button class="row" data-a="exlib"><span class="avatar">${icon('book', 19)}</span>
           <span class="grow"><span class="t">Libreria esercizi</span></span>${icon('chevR', 17)}</button>
-        <div class="row"><span class="avatar">${icon('info', 19)}</span>
-          <span class="grow"><span class="t">Versione</span></span><span class="pill">${VERSION}</span></div>
+        <button class="row" data-a="update"><span class="avatar">${icon('refresh', 19)}</span>
+          <span class="grow"><span class="t">Aggiorna l’app</span><span class="s">Scarica l’ultima versione e ricarica</span></span>
+          <span class="pill">${VERSION}</span></button>
       </div></div>
       <div style="height:16px"></div>`;
   },
@@ -203,6 +204,12 @@ export default {
         case 'goal': {
           const v = await promptSheet('Obiettivo settimanale', { value: S.settings.weeklyGoal, label: 'allenamenti a settimana' });
           if (v) { S.settings.weeklyGoal = Math.max(1, Math.min(14, Number(v) || 4)); save(); render(); }
+          break;
+        }
+        case 'update': {
+          toast('Controllo aggiornamenti…');
+          const r = await checkForUpdate({ force: true });
+          if (r === 'nd') toast('Aggiornamento non disponibile su questo browser', 'err');
           break;
         }
         case 'export': doExport(); break;
