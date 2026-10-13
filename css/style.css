@@ -567,6 +567,34 @@ body.kb-open .sheet .sheet-foot { padding-bottom: 12px; }
    due volte. */
 html.vp-short { --safe-pad-b: 0px; }
 
+/* E proviamo a prolungare la superficie della barra dentro la striscia che
+   resta fuori dal viewport. Se iOS la ritaglia non si perde niente — resta
+   esattamente com'era — ma se la disegna la barra arriva al bordo fisico. */
+html.vp-short .tabbar::after,
+html.vp-short .rail::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; top: 100%;
+  height: var(--vp-gap, 0px);
+  background: var(--bar-bg);
+  pointer-events: none;
+}
+
+/* Seconda strada, quella con le prove a favore: lo sfondo dell'elemento radice
+   diventa lo sfondo del canvas e per specifica lo copre tutto, anche la parte
+   fuori dal viewport — lo si vede nello screenshot, dove la striscia morta è
+   nera come la pagina e non del colore del sistema. Allora ci dipingiamo sopra
+   una fascia del colore della barra, posizionata appena sotto il viewport. */
+html.vp-short body {
+  background-image:
+    linear-gradient(var(--bar-bg), var(--bar-bg)),
+    var(--bg-grad);
+  background-repeat: no-repeat, no-repeat;
+  background-size: 100% var(--vp-gap, 0px), 100% 100%;
+  background-position: left calc(100% + var(--vp-gap, 0px)), left top;
+  background-attachment: fixed, fixed;
+}
+
 /* ------------------------------------------------------- solo verticale --- */
 
 /* iOS ignora sia `orientation` nel manifest sia `screen.orientation.lock()`:

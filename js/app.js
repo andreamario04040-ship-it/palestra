@@ -107,7 +107,17 @@ function syncTabs() {
  * misuriamo se ha funzionato davvero, così le impostazioni possono dirlo e nel
  * caso peggiore smettiamo di sprecare anche il padding della safe area.
  */
-export const viewportInfo = { screen: 0, view: 0, gap: 0, pwa: false };
+export const viewportInfo = { screen: 0, view: 0, gap: 0, pwa: false, css: 0 };
+
+/** Quanto vale davvero `100<unit>` qui: non sempre coincide con innerHeight. */
+function probeUnit(unit) {
+  const d = document.createElement('div');
+  d.style.cssText = `position:fixed;left:-9999px;top:0;width:1px;height:100${unit};pointer-events:none`;
+  document.body.appendChild(d);
+  const h = Math.round(d.getBoundingClientRect().height);
+  d.remove();
+  return h;
+}
 
 function measureViewport() {
   const pwa = navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
@@ -129,7 +139,11 @@ function measureViewport() {
   viewportInfo.screen = tall;
   viewportInfo.view = h;
   viewportInfo.gap = pwa && portrait ? Math.max(0, tall - h) : 0;
-  document.documentElement.classList.toggle('vp-short', viewportInfo.gap > 8);
+  viewportInfo.css = Math.max(...['vh', 'lvh', 'dvh', 'svh'].map(probeUnit));
+
+  const root = document.documentElement;
+  root.classList.toggle('vp-short', viewportInfo.gap > 8);
+  root.style.setProperty('--vp-gap', viewportInfo.gap + 'px');
 }
 
 /* --------------------------------------------------------- solo verticale */
