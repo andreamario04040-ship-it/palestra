@@ -41,7 +41,7 @@ function buildExercise(row) {
   const sets = [];
   for (let i = 0; i < n; i++) {
     const sg = suggest(row.exId, i, row);
-    sets.push({ id: uid(), weight: sg.weight, reps: sg.reps, rpe: null, type: 'n', done: false });
+    sets.push({ id: uid(), weight: sg.weight, reps: sg.reps, rpe: null, type: row.warm ? 'w' : 'n', done: false });
   }
   return {
     exId: row.exId,
@@ -51,6 +51,7 @@ function buildExercise(row) {
     rest: row.rest || ex.rest || S.settings.restDefault,
     note: row.note || '',
     superset: row.superset || null,
+    warm: !!row.warm,
     sets,
   };
 }
@@ -688,11 +689,12 @@ function applyToRoutine(w, { routine, day }) {
     .map((e) => ({
       id: e.rowId || uid(),
       exId: e.exId,
-      sets: Math.max(1, e.sets.filter(isWork).length),
+      sets: Math.max(1, e.warm ? e.sets.length : e.sets.filter(isWork).length),
       reps: e.targetReps,
       rest: e.rest,
       note: e.note || '',
       superset: e.superset || null,
+      warm: !!e.warm,
     }));
   save();
   toast('Scheda aggiornata');
@@ -704,8 +706,8 @@ function saveAsRoutine(w, name) {
     days: [{
       id: uid(), name: w.name || 'Giorno 1',
       exercises: w.exercises.filter((e) => e.sets.some((s) => s.done)).map((e) => ({
-        id: uid(), exId: e.exId, sets: Math.max(1, e.sets.filter(isWork).length),
-        reps: e.targetReps, rest: e.rest, note: e.note || '', superset: e.superset || null,
+        id: uid(), exId: e.exId, sets: Math.max(1, e.warm ? e.sets.length : e.sets.filter(isWork).length),
+        reps: e.targetReps, rest: e.rest, note: e.note || '', superset: e.superset || null, warm: !!e.warm,
       })),
     }],
   };

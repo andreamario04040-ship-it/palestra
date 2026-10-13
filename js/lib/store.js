@@ -123,6 +123,7 @@ function migrate() {
   if (S.current) for (const ex of S.current.exercises || []) fixSets(ex.sets);
   for (const r of S.routines) for (const d of r.days || []) for (const row of d.exercises || []) {
     if (row.superset === undefined) row.superset = null;
+    if (row.warm === undefined) row.warm = false;
   }
 }
 
@@ -241,8 +242,8 @@ export function newDay(routine, name) {
 }
 
 /** Riga esercizio dentro un giorno di scheda. */
-export function newRow(exId, { sets = 3, reps = '8-12', rest = 90, note = '', superset = null } = {}) {
-  return { id: uid(), exId, sets, reps, rest, note, superset };
+export function newRow(exId, { sets = 3, reps = '8-12', rest = 90, note = '', superset = null, warm = false } = {}) {
+  return { id: uid(), exId, sets, reps, rest, note, superset, warm };
 }
 
 export function deleteRoutine(id) {

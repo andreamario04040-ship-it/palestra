@@ -86,9 +86,9 @@ function routineView(r) {
           ${d.exercises.map((e) => {
             const col = ssColor(d, e.superset);
             return `<button class="row" data-ed="${d.id}:${e.id}"${col ? ` style="box-shadow:inset 3px 0 0 ${col}"` : ''}>
-            <span class="pill" style="min-width:48px;justify-content:center">${e.sets}×${esc(String(e.reps))}</span>
+            <span class="pill${e.warm ? ' warm' : ''}" style="min-width:48px;justify-content:center">${e.sets}×${esc(String(e.reps))}</span>
             <span class="grow"><span class="t">${esc(getEx(e.exId).n)}</span>
-            <span class="s">${col ? '<b style="color:' + col + '">superset</b> · ' : ''}${(getEx(e.exId).m || []).map((m) => MUSCLES[m]?.n || m).join(', ')} · rec ${e.rest}s</span></span>
+            <span class="s">${e.warm ? '<b style="color:var(--warn)">riscaldamento</b> · ' : ''}${col ? '<b style="color:' + col + '">superset</b> · ' : ''}${(getEx(e.exId).m || []).map((m) => MUSCLES[m]?.n || m).join(', ')} · rec ${e.rest}s</span></span>
             ${icon('chevR', 17)}</button>`;
           }).join('')}
         </div>` : '<p class="muted fs13 mt10">Nessun esercizio.</p>'}
@@ -124,6 +124,9 @@ function rowSheet(r, d, row) {
       <div class="card flush"><div class="rows">
         <button class="row" data-a="info"><span class="avatar">${icon('info', 19)}</span><span class="grow"><span class="t">Tecnica ed errori comuni</span></span>${icon('chevR', 17)}</button>
         <button class="row" data-a="swap"><span class="avatar">${icon('swap', 19)}</span><span class="grow"><span class="t">Sostituisci esercizio</span></span>${icon('chevR', 17)}</button>
+        <button class="row" data-a="warm"><span class="avatar"${row.warm ? ' style="color:var(--warn)"' : ''}>${icon('flame', 19)}</span>
+          <span class="grow"><span class="t">${row.warm ? 'Non è riscaldamento' : 'Segna come riscaldamento'}</span>
+          <span class="s">${row.warm ? 'Torna a esercizio di lavoro' : 'Le sue serie non contano nel volume né nei record'}</span></span></button>
         <button class="row" data-a="ss"><span class="avatar">${icon('layers', 19)}</span><span class="grow"><span class="t">${row.superset ? 'Togli dal superset' : 'Superset col successivo'}</span><span class="s">${row.superset ? 'Torna a esercizio singolo' : 'Si alternano senza recupero'}</span></span></button>
         <button class="row" data-a="up"><span class="avatar">${icon('arrowUp', 19)}</span><span class="grow"><span class="t">Sposta su</span></span></button>
         <button class="row" data-a="down"><span class="avatar">${icon('arrowDown', 19)}</span><span class="grow"><span class="t">Sposta giù</span></span></button>
@@ -147,6 +150,10 @@ function rowSheet(r, d, row) {
         const i = d.exercises.indexOf(row);
         if (a === 'info') { exerciseSheet(row.exId); return; }
         if (a === 'swap') { commit(); closeSheet(); pickExercise((nw) => { row.exId = nw.id; save(); render(); toast('Esercizio sostituito'); }, { title: 'Sostituisci' }); return; }
+        if (a === 'warm') {
+          row.warm = !row.warm;
+          toast(row.warm ? 'Segnato come riscaldamento' : 'Torna esercizio di lavoro');
+        }
         if (a === 'ss') {
           if (row.superset) row.superset = null;
           else if (i < d.exercises.length - 1) {
@@ -274,7 +281,7 @@ function previewImport(parsed) {
           id: uid(), name: parsed.name, note: 'Importata', created: new Date().toISOString(),
           days: parsed.days.map((d) => ({
             id: uid(), name: d.name,
-            exercises: d.exercises.map((e) => ({ id: uid(), exId: e.exId, sets: e.sets, reps: e.reps, rest: e.rest, note: '', superset: null })),
+            exercises: d.exercises.map((e) => ({ id: uid(), exId: e.exId, sets: e.sets, reps: e.reps, rest: e.rest, note: '', superset: null, warm: !!e.warm })),
           })),
         };
         S.routines.push(r);

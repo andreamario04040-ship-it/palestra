@@ -795,6 +795,7 @@ html.vp-short body {
 .set-line.done .idx { background: var(--ok); color: #06240f; }
 .set-line.cur .idx { background: var(--acc); color: var(--acc-ink); }
 .set-line.w.cur .idx { background: var(--warn); color: #2a1a00; }
+.pill.warm { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); }
 
 .set-line .prev {
   font-size: 12.5px; color: var(--txt-3);
