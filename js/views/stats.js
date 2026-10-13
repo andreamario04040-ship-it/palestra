@@ -1,6 +1,6 @@
 /* Statistiche: volume, frequenza, equilibrio muscolare, record, misure. */
 
-import { S, save, addMeasure, sessionsSince, sessionVolume, sessionSets, idx, prOf, historyOf } from '../lib/store.js';
+import { S, save, addMeasure, sessionsSince, sessionVolume, sessionSets, idx, prOf, historyOf, isWork } from '../lib/store.js';
 import { getEx, MUSCLES } from '../data/exercises.js';
 import { setsByMuscle, weeklyVolume, e1rmSeries } from '../lib/coach.js';
 import {
@@ -26,14 +26,18 @@ export function measureSheet() {
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         ${F.map(([k, lab, u]) => `<div class="field" style="margin:0">
           <label>${lab} (${u})</label>
-          <input class="input" type="number" inputmode="decimal" step="0.1" data-k="${k}" placeholder="${last[k] ?? '—'}">
+          <input class="input" type="text" inputmode="decimal" data-num="dec" data-k="${k}"
+            autocomplete="off" placeholder="${last[k] != null ? String(last[k]).replace('.', ',') : '—'}">
         </div>`).join('')}
       </div>`,
     foot: `<button class="btn ghost" data-sheet-close>Annulla</button><button class="btn primary" data-save>Salva</button>`,
     onMount: (el) => {
       $('[data-save]', el).onclick = () => {
         const m = {};
-        for (const i of $$('[data-k]', el)) if (i.value !== '') m[i.dataset.k] = Number(i.value.replace(',', '.'));
+        for (const i of $$('[data-k]', el)) {
+          const v = Number(String(i.value).replace(',', '.'));
+          if (i.value !== '' && isFinite(v)) m[i.dataset.k] = v;
+        }
         if (!Object.keys(m).length) { toast('Inserisci almeno un valore', 'err'); return; }
         addMeasure(m);
         closeSheet();
@@ -61,7 +65,7 @@ export default {
     // esercizi più allenati
     const byEx = {};
     for (const s of ss) for (const e of s.exercises || []) {
-      const v = (e.sets || []).filter((x) => x.done && !x.warm).reduce((a, x) => a + (Number(x.weight) || 0) * (Number(x.reps) || 0), 0);
+      const v = (e.sets || []).filter((x) => x.done && isWork(x)).reduce((a, x) => a + (Number(x.weight) || 0) * (Number(x.reps) || 0), 0);
       byEx[e.exId] = (byEx[e.exId] || 0) + v;
     }
     const topEx = Object.entries(byEx).sort((a, b) => b[1] - a[1]).slice(0, 6);

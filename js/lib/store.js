@@ -25,6 +25,8 @@ export const DEFAULTS = {
     plates: [25, 20, 15, 10, 5, 2.5, 1.25],
     suggest: true,
     warmup: true,
+    rpe: false,
+    weeklyGoal: 4,
     unit: 'kg',
   },
   routines: [],
@@ -104,7 +106,24 @@ function hydrate(raw) {
   if (!Array.isArray(S.sessions)) S.sessions = [];
   if (!Array.isArray(S.routines)) S.routines = [];
   if (!Array.isArray(S.measures)) S.measures = [];
+  if (!Array.isArray(S.customEx)) S.customEx = [];
+  migrate();
   return true;
+}
+
+/** Allinea i dati salvati con lo schema corrente. */
+function migrate() {
+  const fixSets = (sets) => {
+    for (const s of sets || []) {
+      if (!s.type) s.type = s.warm ? 'w' : 'n';
+      delete s.warm;
+    }
+  };
+  for (const sess of S.sessions) for (const ex of sess.exercises || []) fixSets(ex.sets);
+  if (S.current) for (const ex of S.current.exercises || []) fixSets(ex.sets);
+  for (const r of S.routines) for (const d of r.days || []) for (const row of d.exercises || []) {
+    if (row.superset === undefined) row.superset = null;
+  }
 }
 
 export async function load() {
@@ -137,11 +156,23 @@ let IDX = { byEx: {}, pr: {}, days: {} };
 const e1rm = (w, r) => (r <= 1 ? w : w * (1 + r / 30));
 export { e1rm };
 
+/* Tipi di serie (come nelle app di riferimento):
+   w = riscaldamento · n = normale · d = drop set · f = a cedimento        */
+export const SET_TYPES = {
+  w: { lab: 'W', name: 'Riscaldamento', desc: 'Non conta nel volume né nei record', cls: 'warm' },
+  n: { lab: '', name: 'Normale', desc: 'Serie di lavoro', cls: '' },
+  d: { lab: 'D', name: 'Drop set', desc: 'Scarico immediato senza recupero', cls: 'drop' },
+  f: { lab: 'F', name: 'A cedimento', desc: 'Portata al limite', cls: 'fail' },
+};
+
+/** Serie "di lavoro": esclude il riscaldamento (retrocompatibile con `warm`). */
+export const isWork = (s) => !!s && s.type !== 'w' && s.warm !== true;
+
 export function sessionVolume(sess) {
   let v = 0;
   for (const ex of sess.exercises || []) {
     for (const s of ex.sets || []) {
-      if (s.done && !s.warm) v += (Number(s.weight) || 0) * (Number(s.reps) || 0);
+      if (s.done && isWork(s)) v += (Number(s.weight) || 0) * (Number(s.reps) || 0);
     }
   }
   return v;
@@ -149,7 +180,7 @@ export function sessionVolume(sess) {
 
 export function sessionSets(sess) {
   let n = 0;
-  for (const ex of sess.exercises || []) n += (ex.sets || []).filter((s) => s.done && !s.warm).length;
+  for (const ex of sess.exercises || []) n += (ex.sets || []).filter((s) => s.done && isWork(s)).length;
   return n;
 }
 
@@ -158,7 +189,7 @@ export function buildIndex() {
   for (const sess of S.sessions) {
     days[dayKey(new Date(sess.date))] = (days[dayKey(new Date(sess.date))] || 0) + 1;
     for (const ex of sess.exercises || []) {
-      const done = (ex.sets || []).filter((s) => s.done && !s.warm);
+      const done = (ex.sets || []).filter((s) => s.done && isWork(s));
       if (!done.length) continue;
       (byEx[ex.exId] ||= []).push({ date: sess.date, sessionId: sess.id, sets: done });
       const p = (pr[ex.exId] ||= { weight: 0, reps: 0, e1rm: 0, volume: 0, date: null });

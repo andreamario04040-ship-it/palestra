@@ -59,6 +59,11 @@ export function fmtDurShort(sec) {
   return `${m} min`;
 }
 
+/** "1 scheda" / "3 schede" — evita i plurali sbagliati nelle etichette. */
+export function plur(n, one, many) {
+  return `${n} ${n === 1 ? one : many}`;
+}
+
 export const DOW = ['dom', 'lun', 'mar', 'mer', 'gio', 'ven', 'sab'];
 export const MONTHS = ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno',
   'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'];
@@ -272,6 +277,89 @@ export function promptSheet(title, { value = '', placeholder = '', multiline = f
   });
 }
 
+/* ------------------------------------------------------------ campi num -- */
+
+/**
+ * Stepper numerico usato nell'allenamento.
+ * `enterkeyhint` + selezione automatica rendono la digitazione da tastiera
+ * mobile molto più rapida: tocchi il valore e scrivi quello nuovo.
+ */
+export function numField(name, value, unit, mode = 'decimal') {
+  const pm = name === 'weight' ? 'w' : 'r';
+  const dec = mode === 'decimal';
+  // type="text" e non "number": su iPhone il tastierino italiano produce la
+  // virgola, che un campo number rifiuta svuotandosi. Qui la accettiamo.
+  return `<div class="stepper">
+    <button type="button" data-act="${pm}-" aria-label="Diminuisci ${esc(unit)}" tabindex="-1">−</button>
+    <label class="val">
+      <input type="text" inputmode="${dec ? 'decimal' : 'numeric'}" data-num="${dec ? 'dec' : 'int'}"
+        data-f="${name}" value="${value == null ? '' : String(value).replace('.', ',')}" placeholder="—"
+        autocomplete="off" autocorrect="off" spellcheck="false"
+        enterkeyhint="${name === 'weight' ? 'next' : 'done'}">
+      <small>${esc(unit)}</small>
+    </label>
+    <button type="button" data-act="${pm}+" aria-label="Aumenta ${esc(unit)}" tabindex="-1">+</button>
+  </div>`;
+}
+
+/**
+ * Comportamenti globali della tastiera mobile:
+ * - selezione del contenuto al focus (si sovrascrive senza cancellare)
+ * - Invio sul peso passa alle ripetizioni, Invio sulle ripetizioni chiude
+ * - il campo viene portato in vista sopra la tastiera
+ */
+export function initKeyboard() {
+  document.addEventListener('focusin', (e) => {
+    const el = e.target;
+    if (!(el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement)) return;
+    if (el.dataset.num || el.inputMode === 'decimal' || el.inputMode === 'numeric') {
+      setTimeout(() => { try { el.select(); } catch { /* ignore */ } }, 0);
+    }
+    setTimeout(() => el.scrollIntoView({ block: 'center', behavior: 'smooth' }), 320);
+  });
+
+  // sanificazione: solo cifre e un separatore decimale
+  document.addEventListener('input', (e) => {
+    const el = e.target;
+    if (!(el instanceof HTMLInputElement) || !el.dataset.num) return;
+    let v = el.value.replace(/[^\d.,]/g, '');
+    if (el.dataset.num === 'int') v = v.replace(/[.,]/g, '');
+    else {
+      const i = v.search(/[.,]/);
+      if (i >= 0) v = v.slice(0, i + 1) + v.slice(i + 1).replace(/[.,]/g, '');
+    }
+    if (v !== el.value) {
+      const pos = el.selectionStart;
+      el.value = v;
+      try { el.setSelectionRange(pos - 1, pos - 1); } catch { /* ignore */ }
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    const el = e.target;
+    if (!(el instanceof HTMLInputElement)) return;
+    e.preventDefault();
+    if (el.dataset.f === 'weight') {
+      const next = document.querySelector('[data-f="reps"]');
+      if (next) { next.focus(); return; }
+    }
+    el.blur();
+  });
+
+  // altezza della tastiera -> variabile CSS, così sheet e barre restano visibili
+  const vv = window.visualViewport;
+  if (!vv) return;
+  const sync = () => {
+    const kb = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+    document.documentElement.style.setProperty('--kb', kb + 'px');
+    document.body.classList.toggle('kb-open', kb > 80);
+  };
+  vv.addEventListener('resize', sync);
+  vv.addEventListener('scroll', sync);
+  sync();
+}
+
 /* ------------------------------------------------------- misc interazioni */
 
 /** Delegazione eventi: on(root,'click','[data-act="x"]',handler) */
@@ -281,6 +369,9 @@ export function on(root, type, sel, handler) {
     if (t && root.contains(t)) handler(e, t);
   });
 }
+
+/** Contenitore scrollabile dell'app (non è più la finestra). */
+export const viewport = () => document.getElementById('view') || document.scrollingElement;
 
 /** Scroll orizzontale per portare un elemento al centro del contenitore. */
 export function centerInScroller(el) {

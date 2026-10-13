@@ -4,7 +4,7 @@ import { S, save, newRoutine, newDay, newRow, deleteRoutine, getRoutine } from '
 import { getEx, MUSCLES, registerCustom } from '../data/exercises.js';
 import { TEMPLATES, buildFromTemplate, parseScheda } from '../data/templates.js';
 import {
-  esc, uid, $, $$, on, openSheet, closeSheet, confirmSheet, promptSheet, toast, fmtDurShort,
+  esc, uid, $, $$, on, openSheet, closeSheet, confirmSheet, promptSheet, toast, fmtDurShort, plur,
 } from '../lib/dom.js';
 import { icon } from '../lib/icons.js';
 import { go, back, render } from '../app.js';
@@ -12,12 +12,21 @@ import { pickExercise, exerciseSheet } from './exercises.js';
 import { startWorkout } from './workout.js';
 import { estimate } from './home.js';
 
+const SS_COLORS = ['#8b7bff', '#4cd7f6', '#ffb020', '#f06595', '#35d07f'];
+
+/** Colore assegnato al superset dentro un giorno di scheda. */
+function ssColor(day, gid) {
+  if (!gid) return null;
+  const all = [...new Set(day.exercises.map((x) => x.superset).filter(Boolean))];
+  return SS_COLORS[all.indexOf(gid) % SS_COLORS.length];
+}
+
 /* ------------------------------------------------------------- elenco --- */
 
 function listView() {
   return `
     <div class="topbar">
-      <div><h1>Schede</h1><div class="sub">${S.routines.length} schede · ${S.routines.reduce((a, r) => a + r.days.length, 0)} giorni</div></div>
+      <div><h1>Schede</h1><div class="sub">${plur(S.routines.length, 'scheda', 'schede')} · ${plur(S.routines.reduce((a, r) => a + r.days.length, 0), 'giorno', 'giorni')}</div></div>
       <button class="icon-btn" data-act="new">${icon('plus', 22)}</button>
     </div>
 
@@ -29,7 +38,7 @@ function listView() {
               <span class="t fw7" style="font-size:17px;letter-spacing:-.025em">${esc(r.name)}</span>
               ${r.id === S.activeRoutineId ? '<span class="pill acc">attiva</span>' : ''}
             </div>
-            <div class="s muted fs12" style="margin-top:3px">${r.days.length} giorni · ${r.days.reduce((a, d) => a + d.exercises.length, 0)} esercizi</div>
+            <div class="s muted fs12" style="margin-top:3px">${plur(r.days.length, 'giorno', 'giorni')} · ${plur(r.days.reduce((a, d) => a + d.exercises.length, 0), 'esercizio', 'esercizi')}</div>
           </div>
           ${icon('chevR', 20)}
         </div>
@@ -57,7 +66,7 @@ function routineView(r) {
       <button class="icon-btn" data-act="back">${icon('chevL', 20)}</button>
       <div class="grow" style="text-align:center;min-width:0">
         <div class="t fw7 nowrap" style="font-size:17px;letter-spacing:-.02em">${esc(r.name)}</div>
-        <div class="sub">${r.days.length} giorni</div>
+        <div class="sub">${plur(r.days.length, 'giorno', 'giorni')}</div>
       </div>
       <button class="icon-btn" data-act="rmenu">${icon('more', 20)}</button>
     </div>
@@ -69,16 +78,19 @@ function routineView(r) {
         <div class="flex between center">
           <div class="grow" style="min-width:0">
             <div class="fw7 nowrap" style="font-size:16px;letter-spacing:-.02em">${esc(d.name)}</div>
-            <div class="fs12 muted" style="margin-top:2px">${d.exercises.length} esercizi · ${d.exercises.reduce((a, e) => a + e.sets, 0)} serie · ~${fmtDurShort(estimate(d))}</div>
+            <div class="fs12 muted" style="margin-top:2px">${plur(d.exercises.length, 'esercizio', 'esercizi')} · ${d.exercises.reduce((a, e) => a + e.sets, 0)} serie · ~${fmtDurShort(estimate(d))}</div>
           </div>
           <button class="icon-btn ghost" data-dmenu="${d.id}">${icon('more', 19)}</button>
         </div>
         ${d.exercises.length ? `<div class="rows" style="margin:8px -16px -4px">
-          ${d.exercises.map((e) => `<button class="row" data-ed="${d.id}:${e.id}">
+          ${d.exercises.map((e) => {
+            const col = ssColor(d, e.superset);
+            return `<button class="row" data-ed="${d.id}:${e.id}"${col ? ` style="box-shadow:inset 3px 0 0 ${col}"` : ''}>
             <span class="pill" style="min-width:48px;justify-content:center">${e.sets}×${esc(String(e.reps))}</span>
             <span class="grow"><span class="t">${esc(getEx(e.exId).n)}</span>
-            <span class="s">${(getEx(e.exId).m || []).map((m) => MUSCLES[m]?.n || m).join(', ')} · rec ${e.rest}s</span></span>
-            ${icon('chevR', 17)}</button>`).join('')}
+            <span class="s">${col ? '<b style="color:' + col + '">superset</b> · ' : ''}${(getEx(e.exId).m || []).map((m) => MUSCLES[m]?.n || m).join(', ')} · rec ${e.rest}s</span></span>
+            ${icon('chevR', 17)}</button>`;
+          }).join('')}
         </div>` : '<p class="muted fs13 mt10">Nessun esercizio.</p>'}
         <div class="flex gap8 mt14">
           <button class="btn ghost sm grow" data-addex="${d.id}">${icon('plus', 16)} Esercizio</button>
@@ -112,6 +124,7 @@ function rowSheet(r, d, row) {
       <div class="card flush"><div class="rows">
         <button class="row" data-a="info"><span class="avatar">${icon('info', 19)}</span><span class="grow"><span class="t">Tecnica ed errori comuni</span></span>${icon('chevR', 17)}</button>
         <button class="row" data-a="swap"><span class="avatar">${icon('swap', 19)}</span><span class="grow"><span class="t">Sostituisci esercizio</span></span>${icon('chevR', 17)}</button>
+        <button class="row" data-a="ss"><span class="avatar">${icon('layers', 19)}</span><span class="grow"><span class="t">${row.superset ? 'Togli dal superset' : 'Superset col successivo'}</span><span class="s">${row.superset ? 'Torna a esercizio singolo' : 'Si alternano senza recupero'}</span></span></button>
         <button class="row" data-a="up"><span class="avatar">${icon('arrowUp', 19)}</span><span class="grow"><span class="t">Sposta su</span></span></button>
         <button class="row" data-a="down"><span class="avatar">${icon('arrowDown', 19)}</span><span class="grow"><span class="t">Sposta giù</span></span></button>
         <button class="row" data-a="del"><span class="avatar" style="color:var(--err)">${icon('trash', 19)}</span><span class="grow"><span class="t" style="color:var(--err)">Rimuovi dalla scheda</span></span></button>
@@ -134,6 +147,15 @@ function rowSheet(r, d, row) {
         const i = d.exercises.indexOf(row);
         if (a === 'info') { exerciseSheet(row.exId); return; }
         if (a === 'swap') { commit(); closeSheet(); pickExercise((nw) => { row.exId = nw.id; save(); render(); toast('Esercizio sostituito'); }, { title: 'Sostituisci' }); return; }
+        if (a === 'ss') {
+          if (row.superset) row.superset = null;
+          else if (i < d.exercises.length - 1) {
+            const gid = d.exercises[i + 1].superset || uid();
+            row.superset = gid;
+            d.exercises[i + 1].superset = gid;
+            toast('Superset creato');
+          } else toast('Serve un esercizio successivo', 'err');
+        }
         if (a === 'up' && i > 0) { d.exercises.splice(i - 1, 0, d.exercises.splice(i, 1)[0]); }
         if (a === 'down' && i < d.exercises.length - 1) { d.exercises.splice(i + 1, 0, d.exercises.splice(i, 1)[0]); }
         if (a === 'del') {
@@ -227,8 +249,8 @@ function previewImport(parsed) {
     title: 'Controlla e conferma',
     body: `
       <div class="flex gap8 wrap" style="margin-bottom:12px">
-        <span class="pill acc">${parsed.days.length} giorni</span>
-        <span class="pill">${parsed.days.reduce((a, d) => a + d.exercises.length, 0)} esercizi</span>
+        <span class="pill acc">${plur(parsed.days.length, 'giorno', 'giorni')}</span>
+        <span class="pill">${plur(parsed.days.reduce((a, d) => a + d.exercises.length, 0), 'esercizio', 'esercizi')}</span>
         ${parsed.unmatched ? `<span class="pill warn">${parsed.unmatched} da verificare</span>` : '<span class="pill ok">tutti riconosciuti</span>'}
       </div>
       ${parsed.unmatched ? `<div class="coach" style="margin:0 0 14px">${icon('info', 17)}<div>Gli esercizi evidenziati non sono nel catalogo: li creo come personalizzati. Potrai sostituirli con un tap.</div></div>` : ''}

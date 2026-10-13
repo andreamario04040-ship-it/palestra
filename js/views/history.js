@@ -1,10 +1,10 @@
 /* Diario: calendario, elenco allenamenti e dettaglio sessione. */
 
-import { S, save, deleteSession, sessionVolume, sessionSets, idx } from '../lib/store.js';
+import { S, save, deleteSession, sessionVolume, sessionSets, idx, isWork, SET_TYPES } from '../lib/store.js';
 import { getEx } from '../data/exercises.js';
 import {
   esc, $, on, fmtDate, fmtTime, fmtDurShort, fmtVolume, fmtVol, fmtWeight, openSheet, closeSheet,
-  confirmSheet, promptSheet, toast, MONTHS,
+  confirmSheet, promptSheet, toast, MONTHS, plur,
 } from '../lib/dom.js';
 import { icon } from '../lib/icons.js';
 import { monthCal } from '../lib/charts.js';
@@ -31,7 +31,7 @@ export function sessionSheet(id) {
         <div class="card" style="padding:12px 14px">
           <div class="fw7 fs15" style="letter-spacing:-.02em">${esc(getEx(e.exId).n)}</div>
           <div class="flex wrap gap6 mt6">
-            ${e.sets.map((x, i) => `<span class="pill ${x.warm ? '' : 'acc'}">${x.warm ? 'W' : i + 1}· ${x.weight != null ? fmtWeight(x.weight) + '×' : ''}${x.reps}</span>`).join('')}
+            ${e.sets.map((x, i) => `<span class="pill ${isWork(x) ? 'acc' : ''}">${SET_TYPES[x.type || 'n']?.lab || i + 1}· ${x.weight != null ? fmtWeight(x.weight) + '×' : ''}${x.reps}${x.rpe ? ` <small style="opacity:.7">@${x.rpe}</small>` : ''}</span>`).join('')}
           </div>
           ${e.note ? `<div class="fs12 muted mt6">${esc(e.note)}</div>` : ''}
         </div>`).join('')}`,
@@ -68,7 +68,7 @@ export default {
 
     return `
       <div class="topbar">
-        <div><h1>Diario</h1><div class="sub">${S.sessions.length} allenamenti registrati</div></div>
+        <div><h1>Diario</h1><div class="sub">${plur(S.sessions.length, 'allenamento registrato', 'allenamenti registrati')}</div></div>
       </div>
 
       <div class="card">

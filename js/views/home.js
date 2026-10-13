@@ -3,7 +3,7 @@
 import { S, save, sessionsSince, sessionVolume, sessionSets, activeRoutine, idx, streakWeeks } from '../lib/store.js';
 import { nextDay, balanceHint, parseReps } from '../lib/coach.js';
 import { getEx, MUSCLES } from '../data/exercises.js';
-import { esc, fmtVolume, fmtVol, fmtWeight, fmtDate, fmtDurShort, openSheet, closeSheet, on, $ } from '../lib/dom.js';
+import { esc, fmtVolume, fmtVol, fmtWeight, fmtDate, fmtDurShort, openSheet, closeSheet, on, $, plur } from '../lib/dom.js';
 import { icon } from '../lib/icons.js';
 import { heatGrid } from '../lib/charts.js';
 import { go, render } from '../app.js';
@@ -26,6 +26,26 @@ export function estimate(day) {
     t += r.sets * (work + (r.rest || 90));
   }
   return t + 240; // riscaldamento e transizioni
+}
+
+/** Progresso verso l'obiettivo settimanale di allenamenti. */
+function goalCard(done) {
+  const goal = Math.max(1, S.settings.weeklyGoal || 4);
+  const pct = Math.min(1, done / goal);
+  const c = 2 * Math.PI * 26;
+  return `<div class="card flex center gap14" style="margin-bottom:10px">
+    <svg width="68" height="68" viewBox="0 0 68 68" style="flex:none;transform:rotate(-90deg)">
+      <circle cx="34" cy="34" r="26" fill="none" stroke="var(--surface-3)" stroke-width="7"/>
+      <circle cx="34" cy="34" r="26" fill="none" stroke="var(--acc)" stroke-width="7" stroke-linecap="round"
+        stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${(c * (1 - pct)).toFixed(1)}"/>
+    </svg>
+    <div class="grow">
+      <div class="fw7" style="font-size:16px;letter-spacing:-.02em">${done} di ${plur(goal, 'allenamento', 'allenamenti')}</div>
+      <div class="s muted fs12" style="margin-top:2px">${done >= goal
+        ? 'Obiettivo raggiunto, bravo.'
+        : `Ne manca${goal - done === 1 ? '' : 'no'} ${goal - done} per chiudere la settimana.`}</div>
+    </div>
+  </div>`;
 }
 
 /** Invito (una sola volta) ad aggiungere l'app alla schermata Home. */
@@ -81,14 +101,14 @@ export default {
             <button class="pill" data-act="pickday">${esc(rt.name)} ${icon('chevD', 12)}</button>
           </div>
           <h2 style="font-size:26px;font-weight:800;letter-spacing:-.035em;margin:12px 0 6px">${esc(day.name)}</h2>
-          <div class="fs13 muted">${day.exercises.length} esercizi · ${day.exercises.reduce((a, e) => a + e.sets, 0)} serie · ~${fmtDurShort(estimate(day))}</div>
+          <div class="fs13 muted">${plur(day.exercises.length, 'esercizio', 'esercizi')} · ${day.exercises.reduce((a, e) => a + e.sets, 0)} serie · ~${fmtDurShort(estimate(day))}</div>
           <div class="flex wrap gap6 mt10">${musclesOf(day).map((m) => `<span class="pill">${esc(m)}</span>`).join('')}</div>
           <div class="divider"></div>
           <div class="rows" style="margin:-4px 0 10px">
             ${day.exercises.slice(0, 4).map((r) => `<div class="flex center gap10" style="padding:5px 0">
               <span class="pill" style="min-width:42px;justify-content:center">${r.sets}×${esc(String(r.reps))}</span>
               <span class="fs15 nowrap grow">${esc(getEx(r.exId).n)}</span></div>`).join('')}
-            ${day.exercises.length > 4 ? `<div class="fs12 muted" style="padding:4px 0 0">+ altri ${day.exercises.length - 4} esercizi</div>` : ''}
+            ${day.exercises.length > 4 ? `<div class="fs12 muted" style="padding:4px 0 0">+ ${plur(day.exercises.length - 4, 'altro esercizio', 'altri esercizi')}</div>` : ''}
           </div>
           <button class="btn primary block xl" data-act="start">${icon('play', 20)} Inizia allenamento</button>
           <button class="btn ghost block sm mt10" data-act="freestart">Allenamento libero</button>
@@ -103,6 +123,7 @@ export default {
         </div>`}
 
       <div class="section-title">Questa settimana</div>
+      ${goalCard(week.length)}
       <div class="stat-row">
         <div class="stat"><div class="v">${week.length}</div><div class="k">Allenamenti</div></div>
         <div class="stat"><div class="v">${fmtVolume(vol)}<span class="u">${vol >= 10000 ? '' : 'kg'}</span></div><div class="k">Volume</div></div>
@@ -161,7 +182,7 @@ export default {
           ${S.routines.map((r) => r.days.map((d) => `
             <button class="row" data-r="${r.id}" data-d="${d.id}">
               <span class="avatar ${r.id === rt.id ? 'acc' : ''}">${icon('dumbbell', 19)}</span>
-              <span class="grow"><span class="t">${esc(d.name)}</span><span class="s">${esc(r.name)} · ${d.exercises.length} esercizi</span></span>
+              <span class="grow"><span class="t">${esc(d.name)}</span><span class="s">${esc(r.name)} · ${plur(d.exercises.length, 'esercizio', 'esercizi')}</span></span>
               ${icon('chevR', 18)}</button>`).join('')).join('')}
         </div></div>`,
         onMount: (el) => on(el, 'click', '[data-r]', (e, t) => {

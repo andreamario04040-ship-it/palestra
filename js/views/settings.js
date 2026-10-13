@@ -5,7 +5,7 @@ import { esc, $, $$, on, openSheet, closeSheet, confirmSheet, promptSheet, toast
 import { icon } from '../lib/icons.js';
 import { applyTheme, render, go } from '../app.js';
 
-const VERSION = '1.0.0';
+const VERSION = '1.1.0';
 
 function toggleRow(key, title, sub, group = 'settings') {
   const v = group === 'settings' ? S.settings[key] : S[group][key];
@@ -96,6 +96,10 @@ export default {
         ${toggleRow('autoAdvance', 'Avanzamento automatico', 'Passa al prossimo esercizio quando finisci')}
         ${toggleRow('suggest', 'Suggerimenti di carico', 'Propone peso e ripetizioni in base allo storico')}
         ${toggleRow('warmup', 'Riscaldamento guidato', 'Propone le serie di avvicinamento')}
+        ${toggleRow('rpe', 'RPE', 'Registra lo sforzo percepito a ogni serie')}
+        <button class="row" data-a="goal"><span class="avatar">${icon('target', 19)}</span>
+          <span class="grow"><span class="t">Obiettivo settimanale</span><span class="s">Allenamenti a settimana</span></span>
+          <span class="pill acc">${st.weeklyGoal}</span></button>
       </div></div>
 
       <div class="section-title">Feedback</div>
@@ -194,6 +198,11 @@ export default {
             const arr = v.split(/[,;\s]+/).map((x) => Number(x.replace(',', '.'))).filter((x) => x > 0);
             if (arr.length) { S.settings.plates = arr.sort((a, b) => b - a); save(); render(); }
           }
+          break;
+        }
+        case 'goal': {
+          const v = await promptSheet('Obiettivo settimanale', { value: S.settings.weeklyGoal, label: 'allenamenti a settimana' });
+          if (v) { S.settings.weeklyGoal = Math.max(1, Math.min(14, Number(v) || 4)); save(); render(); }
           break;
         }
         case 'export': doExport(); break;

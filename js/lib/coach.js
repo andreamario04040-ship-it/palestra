@@ -4,7 +4,7 @@
    Obiettivo: durante l'allenamento l'utente deve solo confermare.
    ========================================================================= */
 
-import { S, historyOf, lastPerf, prOf, e1rm, sessionVolume } from './store.js';
+import { S, historyOf, lastPerf, prOf, e1rm, sessionVolume, isWork } from './store.js';
 import { getEx, stepFor, MUSCLES } from '../data/exercises.js';
 import { fmtWeight } from './dom.js';
 
@@ -18,8 +18,18 @@ export function parseReps(r) {
   return { min: nums[0], max: nums[1] ?? nums[0], timed: false };
 }
 
-/** Arrotonda al più vicino multiplo utile per quell'attrezzo. */
+/**
+ * Arrotonda a un carico davvero componibile: per il bilanciere il peso deve
+ * essere bilanciere + 2 × (dischi per lato), quindi a multipli del doppio del
+ * disco più piccolo disponibile.
+ */
 export function roundLoad(w, ex) {
+  if (w == null || !isFinite(w)) return null;
+  if (ex?.eq === 'bilanciere' || ex?.eq === 'smith') {
+    const bar = S.settings.barWeight || 20;
+    const q = Math.min(...(S.settings.plates?.length ? S.settings.plates : [1.25])) * 2;
+    return Math.max(bar, bar + Math.round((w - bar) / q) * q);
+  }
   const st = stepFor(ex);
   const q = ex?.eq === 'manubri' ? 1 : st / 2;
   return Math.round(w / q) * q;
@@ -79,6 +89,16 @@ export function suggest(exId, i, row) {
   };
 }
 
+/**
+ * La serie corrispondente dell'ultimo allenamento, per il confronto a colpo
+ * d'occhio accanto a ogni riga ("Precedente").
+ */
+export function prevSet(exId, workIndex) {
+  const lp = historyOf(exId)[0];
+  if (!lp || !lp.sets.length) return null;
+  return lp.sets[Math.min(workIndex, lp.sets.length - 1)] || null;
+}
+
 /** Serie di riscaldamento proposte per un carico di lavoro. */
 export function warmupSets(work, ex) {
   if (!work || work < 40) return [];
@@ -87,7 +107,7 @@ export function warmupSets(work, ex) {
   const f = [[0.5, 8], [0.7, 5], [0.85, 3]];
   for (const [p, r] of f) {
     const w = Math.max(bar, roundLoad(work * p, ex));
-    if (!out.some((o) => o.weight === w)) out.push({ weight: w, reps: r, warm: true });
+    if (!out.some((o) => o.weight === w)) out.push({ weight: w, reps: r, type: 'w' });
   }
   return out;
 }
@@ -122,7 +142,7 @@ export function nextDay(routine) {
 export function detectPRs(sess, prBefore) {
   const out = [];
   for (const ex of sess.exercises || []) {
-    const done = (ex.sets || []).filter((s) => s.done && !s.warm);
+    const done = (ex.sets || []).filter((s) => s.done && isWork(s));
     if (!done.length) continue;
     const before = prBefore[ex.exId] || { weight: 0, e1rm: 0, reps: 0 };
     const maxW = Math.max(...done.map((s) => Number(s.weight) || 0));
@@ -139,7 +159,7 @@ export function setsByMuscle(sessions) {
   const out = {};
   for (const s of sessions) {
     for (const ex of s.exercises || []) {
-      const n = (ex.sets || []).filter((x) => x.done && !x.warm).length;
+      const n = (ex.sets || []).filter((x) => x.done && isWork(x)).length;
       if (!n) continue;
       const def = getEx(ex.exId);
       for (const m of def.m || []) out[m] = (out[m] || 0) + n;
@@ -164,7 +184,7 @@ export function weeklyVolume(weeks = 12) {
     const e = out.get(k);
     e.volume += sessionVolume(s);
     e.sessions += 1;
-    e.sets += (s.exercises || []).reduce((a, x) => a + (x.sets || []).filter((y) => y.done && !y.warm).length, 0);
+    e.sets += (s.exercises || []).reduce((a, x) => a + (x.sets || []).filter((y) => y.done && isWork(y)).length, 0);
   }
   return [...out.values()];
 }

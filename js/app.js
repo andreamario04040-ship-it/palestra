@@ -1,8 +1,14 @@
-/* Bootstrap, router e shell dell'applicazione. */
+/* Bootstrap, router e shell dell'applicazione.
+
+   Struttura: #app è alto quanto la finestra (100dvh) ed è una colonna flex.
+   Lo scroll avviene dentro #view, non sulla pagina: così la tab bar è un
+   elemento di flusso ancorato in fondo alla colonna e non può "staccarsi"
+   dal bordo inferiore, cosa che su iOS succede agli elementi `position:fixed`
+   dopo l'apertura e chiusura della tastiera.                               */
 
 import { S, load, save, sub, buildIndex } from './lib/store.js';
 import { registerCustom } from './data/exercises.js';
-import { $, on, audioUnlock, toast, closeSheet, sheetOpen } from './lib/dom.js';
+import { $, on, audioUnlock, toast, closeSheet, sheetOpen, initKeyboard } from './lib/dom.js';
 import { icon } from './lib/icons.js';
 import { clearFigures } from './lib/anim.js';
 
@@ -19,25 +25,27 @@ const VIEWS = { home, routines, history: historyView, stats, settings, exercises
 const TABS = [
   { k: 'home', ico: 'home', lab: 'Oggi' },
   { k: 'routines', ico: 'clipboard', lab: 'Schede' },
-  { k: 'start', ico: 'play', lab: '' },
+  { k: 'start', ico: 'logo', lab: '' },
   { k: 'history', ico: 'calendar', lab: 'Diario' },
   { k: 'stats', ico: 'chart', lab: 'Statistiche' },
 ];
 
 let stack = [{ name: 'home', params: {} }];
-let scrollMemo = {};
+const scrollMemo = {};
 
 export function route() { return stack[stack.length - 1]; }
 
+const memoKey = (r) => r.name + JSON.stringify(r.params);
+
 export function go(name, params = {}, { replace = false, reset = false } = {}) {
   if (sheetOpen()) closeSheet(true);
-  const cur = route();
-  scrollMemo[cur.name + JSON.stringify(cur.params)] = window.scrollY;
+  const view = $('#view');
+  if (view) scrollMemo[memoKey(route())] = view.scrollTop;
   if (reset) stack = [{ name, params }];
   else if (replace) stack[stack.length - 1] = { name, params };
   else stack.push({ name, params });
   render();
-  window.scrollTo(0, 0);
+  $('#view')?.scrollTo(0, 0);
 }
 
 export function back() {
@@ -45,9 +53,8 @@ export function back() {
   if (stack.length > 1) {
     stack.pop();
     render();
-    const cur = route();
-    const y = scrollMemo[cur.name + JSON.stringify(cur.params)] || 0;
-    requestAnimationFrame(() => window.scrollTo(0, y));
+    const y = scrollMemo[memoKey(route())] || 0;
+    requestAnimationFrame(() => $('#view')?.scrollTo(0, y));
   }
 }
 
@@ -55,41 +62,40 @@ export function canGoBack() { return stack.length > 1; }
 
 /* ------------------------------------------------------------- rendering */
 
-let appEl, tabEl;
+let appEl;
+
+function shell() {
+  return `<main id="view"></main>
+    <nav class="tabbar" id="tabbar">${TABS.map((t) => (t.k === 'start'
+      ? `<div class="fab-slot"><button class="tab-fab" data-act="quickstart" aria-label="Inizia allenamento">${icon('logo', 30)}</button></div>`
+      : `<button data-tab="${t.k}" data-act="tab" data-k="${t.k}">${icon(t.ico, 23)}<span>${t.lab}</span></button>`)).join('')}
+    </nav>`;
+}
 
 export function render() {
   const r = route();
   const view = VIEWS[r.name] || VIEWS.home;
   clearFigures();
 
-  // allenamento in corso: schermata a tutto schermo
+  // allenamento in corso: occupa tutta la colonna, senza tab bar
   if (isWorkoutOpen()) {
     appEl.innerHTML = renderWorkout();
-    tabEl.style.display = 'none';
-    mountWorkout(appEl);
+    mountWorkout($('.wk', appEl));   // nodo nuovo a ogni render: niente listener duplicati
     return;
   }
 
-  tabEl.style.display = '';
-  appEl.innerHTML = `<div class="screen" data-view="${r.name}">${resumeBanner()}${view.render(r.params)}</div>`;
-  view.mount?.($('.screen', appEl), r.params);
+  if (!$('#view')) appEl.innerHTML = shell();
+  const viewEl = $('#view');
+  viewEl.innerHTML = `<div class="screen" data-view="${r.name}">${resumeBanner()}${view.render(r.params)}</div>`;
+  view.mount?.($('.screen', viewEl), r.params);
   syncTabs();
 }
 
 function syncTabs() {
   const r = route().name;
-  for (const b of tabEl.querySelectorAll('button[data-tab]')) {
+  for (const b of document.querySelectorAll('#tabbar button[data-tab]')) {
     b.classList.toggle('on', b.dataset.tab === r);
   }
-}
-
-function tabbar() {
-  return TABS.map((t) => {
-    if (t.k === 'start') {
-      return `<div class="fab-slot"><button class="tab-fab" data-act="quickstart" aria-label="Inizia allenamento">${icon('logo', 28)}</button></div>`;
-    }
-    return `<button data-tab="${t.k}" data-act="tab" data-k="${t.k}">${icon(t.ico, 23)}<span>${t.lab}</span></button>`;
-  }).join('');
 }
 
 /* ------------------------------------------------------------------ tema */
@@ -106,10 +112,7 @@ export function applyTheme() {
 
 async function boot() {
   appEl = $('#app');
-  tabEl = document.createElement('nav');
-  tabEl.className = 'tabbar';
-  tabEl.innerHTML = tabbar();
-  document.body.appendChild(tabEl);
+  appEl.innerHTML = shell();
 
   await load();
   registerCustom(S.customEx || []);
@@ -118,24 +121,25 @@ async function boot() {
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
 
   render();
+  initKeyboard();
 
   // scorciatoia dal manifest / link diretto
   if (new URLSearchParams(location.search).get('a') === 'start') {
-    history.replaceState({}, '', location.pathname);
+    window.history.replaceState({}, '', location.pathname);
     setTimeout(() => import('./views/workout.js').then((m) => m.quickStart()), 400);
   }
 
   // delega globale
   on(document, 'click', '[data-act="tab"]', (e, t) => {
     const k = t.dataset.k;
-    if (route().name === k) { window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+    if (route().name === k) { $('#view')?.scrollTo({ top: 0, behavior: 'smooth' }); return; }
     go(k, {}, { reset: true });
   });
   on(document, 'click', '[data-act="back"]', () => back());
   on(document, 'click', '[data-act="quickstart"]', () => import('./views/workout.js').then((m) => m.quickStart()));
 
   // primo gesto: sblocca l'audio per i timer
-  const unlock = () => { audioUnlock(); document.removeEventListener('touchend', unlock); document.removeEventListener('click', unlock); };
+  const unlock = () => { audioUnlock(); };
   document.addEventListener('touchend', unlock, { once: true });
   document.addEventListener('click', unlock, { once: true });
 

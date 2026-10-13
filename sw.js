@@ -1,6 +1,6 @@
 /* Service worker: app shell offline-first, aggiornamento in background. */
 
-const VERSION = 'v1.0.1';
+const VERSION = 'v1.1.0';
 const CACHE = `palestra-${VERSION}`;
 
 const ASSETS = [
