@@ -54,6 +54,13 @@ const P = {
   note: '<path d="M5 4.5A1.5 1.5 0 0 1 6.5 3h11A1.5 1.5 0 0 1 19 4.5v15a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 19.5z"/><path d="M8.5 8h7M8.5 12h7M8.5 16h4"/>',
   plus2: '<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>',
   bulb: '<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.5.4.8 1 .8 1.6V16h5.4v-.5c0-.6.3-1.2.8-1.6A6 6 0 0 0 12 3z"/>',
+  /* logo dell'app: manubrio pieno, simmetrico rispetto a 12,12 */
+  logo: '<g fill="currentColor" stroke="none">'
+    + '<rect x="6.72" y="10.8" width="10.56" height="2.4" rx="1.2"/>'
+    + '<rect x="4.27" y="7.68" width="2.45" height="8.64" rx=".72"/>'
+    + '<rect x="17.28" y="7.68" width="2.45" height="8.64" rx=".72"/>'
+    + '<rect x="2.28" y="9.19" width="2.06" height="5.62" rx=".6"/>'
+    + '<rect x="19.66" y="9.19" width="2.06" height="5.62" rx=".6"/></g>',
   medal: '<circle cx="12" cy="15" r="5.5"/><path d="M8.5 10 6 3h12l-2.5 7"/><path d="m12 13 .8 1.6 1.7.2-1.3 1.2.3 1.7-1.5-.8-1.5.8.3-1.7L9.5 15l1.7-.2z"/>',
 };
 

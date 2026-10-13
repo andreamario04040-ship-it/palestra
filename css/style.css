@@ -210,22 +210,23 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
 .tabbar svg { width: 23px; height: 23px; transition: transform .25s var(--spring); }
 .tabbar button.on svg { transform: translateY(-1px) scale(1.06); }
 
-.tabbar .fab-slot { position: relative; }
-.tab-fab {
-  position: absolute;
-  left: 50%;
-  top: -16px;
-  transform: translateX(-50%);
+/* Pulsante centrale. I selettori partono da .tabbar per battere in specificità
+   `.tabbar button`, che altrimenti gli imporrebbe flex-direction e padding. */
+.tabbar .fab-slot { align-self: stretch; display: grid; place-items: center; }
+.tabbar .tab-fab {
   width: 56px; height: 56px;
-  border-radius: 20px;
+  padding: 0;
+  border-radius: 19px;
   background: linear-gradient(160deg, var(--acc), var(--acc-2));
   color: var(--acc-ink);
-  display: grid; place-items: center;
+  display: grid;
+  place-items: center;
   box-shadow: var(--glow);
+  transform: translateY(-10px);
   transition: transform .2s var(--spring);
 }
-.tab-fab:active { transform: translateX(-50%) scale(.9); }
-.tab-fab svg { width: 27px; height: 27px; }
+.tabbar .tab-fab:active { transform: translateY(-10px) scale(.92); }
+.tabbar .tab-fab svg { width: 30px; height: 30px; transform: none; }
 
 /* -------------------------------------------------------------- card ---- */
 

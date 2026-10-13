@@ -86,7 +86,7 @@ function syncTabs() {
 function tabbar() {
   return TABS.map((t) => {
     if (t.k === 'start') {
-      return `<div class="fab-slot"><button class="tab-fab" data-act="quickstart" aria-label="Inizia allenamento">${icon('play', 27)}</button></div>`;
+      return `<div class="fab-slot"><button class="tab-fab" data-act="quickstart" aria-label="Inizia allenamento">${icon('logo', 28)}</button></div>`;
     }
     return `<button data-tab="${t.k}" data-act="tab" data-k="${t.k}">${icon(t.ico, 23)}<span>${t.lab}</span></button>`;
   }).join('');
