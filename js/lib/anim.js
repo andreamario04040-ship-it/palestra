@@ -140,7 +140,7 @@ export const PATTERNS = {
     props: [{ t: 'rail', at: [114, 84] }],
   },
   vertPull: {
-    a: D({ hip: [100, 100], torso: 88, ankle: [86, 126], hand: [104, 26], kneeS: -1, foot: -40 }),
+    a: D({ hip: [100, 95], torso: 88, ankle: [86, 124], hand: [104, 26], kneeS: -1, foot: -40 }),
     b: D({ hip: [100, 76], torso: 85, ankle: [86, 102], hand: [104, 26], kneeS: -1, foot: -40 }),
     props: [{ t: 'bar-fixed', y: 26 }],
   },
@@ -778,9 +778,13 @@ export function mountFigure(host, src, { period = 2600, cls = 'exfig', cue = tru
       e.setAttribute('class', front ? 'b-fill-s' : 'b-fill-d');
     }
     if (front) {
+      // di fronte il tronco è un poligono con la vita rientrante, non una lastra
+      const wy = lerpP(sk.sh, sk.hip, 0.6);
+      const ww = Math.min(pose.sw, pose.hw) * 0.42;
+      const pt = (x, y) => `${x.toFixed(1)} ${y.toFixed(1)}`;
       torsoP.setAttribute('d',
-        `M${sk.shL[0].toFixed(1)} ${sk.shL[1].toFixed(1)}L${sk.shR[0].toFixed(1)} ${sk.shR[1].toFixed(1)}`
-        + `L${sk.hipR[0].toFixed(1)} ${sk.hipR[1].toFixed(1)}L${sk.hipL[0].toFixed(1)} ${sk.hipL[1].toFixed(1)}Z`);
+        `M${pt(sk.shL[0], sk.shL[1])}L${pt(sk.shR[0], sk.shR[1])}L${pt(wy[0] + ww, wy[1])}`
+        + `L${pt(sk.hipR[0], sk.hipR[1])}L${pt(sk.hipL[0], sk.hipL[1])}L${pt(wy[0] - ww, wy[1])}Z`);
       torsoP.setAttribute('class', 'b-fill b-torso-wide');
     } else {
       torsoP.setAttribute('d', capsule(sk.hip, sk.sh, R.torso[0], R.torso[1]));

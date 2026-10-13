@@ -1039,7 +1039,7 @@ body.kb-open .tabbar { display: none; }
 .exfig .b-fill-d { fill: var(--txt); opacity: .3; }          /* arto lontano */
 .exfig .b-fill-s { fill: var(--txt); opacity: .68; }         /* arto lontano, di fronte */
 .exfig .b-torso-wide {                                        /* tronco di fronte */
-  stroke: var(--txt); stroke-width: 7; stroke-linejoin: round; opacity: .9;
+  stroke: var(--txt); stroke-width: 6; stroke-linejoin: round; opacity: .9;
 }
 .exfig .b-head { fill: var(--txt); opacity: .92; }
 .exfig .b-focus { fill: var(--acc); opacity: .5; }            /* muscolo che lavora */
