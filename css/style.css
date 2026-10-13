@@ -1080,7 +1080,7 @@ body.kb-open .tabbar { display: none; }
    l'anatomia nelle tavole degli esercizi. Quello che lavora va in rosso. */
 .exfig .b-mus { fill: #0a0b0f; opacity: .11; }
 .exfig .b-focus { fill: #e03a2f; stroke: #8f1d16; stroke-width: .9; opacity: .95; }
-.exfig .b-spine { stroke: var(--acc); opacity: .9; stroke-dasharray: 3.5 3; }
+.exfig .b-spine { stroke: var(--txt); opacity: .4; stroke-dasharray: 3 3; }
 .exfig .b-shadow { fill: var(--txt); opacity: .05; }
 
 .exfig .p-floor { stroke: var(--line-2); }
