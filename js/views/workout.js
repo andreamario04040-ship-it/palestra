@@ -214,9 +214,18 @@ function bodyHTML() {
   const isTimed = rr.timed || ex.timed;
   const col = ssColor(e.superset);
   const group = ssGroup(e.superset);
+  // riscaldamento: deve essere evidente che non è una serie di lavoro
+  const warm = !allDone && set.type === 'w';
+  const warmTot = e.sets.filter((x) => x.type === 'w').length;
+  const warmN = warm ? e.sets.filter((x, k) => x.type === 'w' && k <= i).length : 0;
+  const daScaldare = !allDone && !warmTot && S.settings.warmup
+    && !e.sets.some((x) => x.done) && e.sets.filter(isWork).length > 1;
 
   return `
-    <div class="ex-hero"${col ? ` style="border-color:${col}55"` : ''}>
+    <div class="ex-hero${warm ? ' warm' : ''}"${col && !warm ? ` style="border-color:${col}55"` : ''}>
+      ${warm ? `<div class="warm-bar">${icon('flame', 14)}
+        <span class="grow">Riscaldamento · ${warmN} di ${warmTot}</span>
+        <span class="wb-note">non conta nel volume</span></div>` : ''}
       ${col ? `<div class="ss-bar" style="background:${col}">
         ${icon('layers', 13)} Superset · ${group.map((x) => esc(getEx(x.e.exId).n.split(' ')[0])).join(' + ')}
       </div>` : ''}
@@ -238,8 +247,11 @@ function bodyHTML() {
       </div>
 
       <div class="set-head">
-        <div class="big">${allDone ? 'Esercizio completato' : `Serie ${i + 1} di ${e.sets.length}${set.type !== 'n' ? ' · ' + SET_TYPES[set.type].name.toLowerCase() : ''}`}</div>
-        ${!allDone && sg.tone !== 'new' ? `<div class="hint">${sg.tone === 'up' ? '↑ progressione' : sg.tone === 'down' ? '↓ scarico' : 'mantieni'}</div>` : ''}
+        <div class="big${warm ? ' warm' : ''}">${allDone ? 'Esercizio completato'
+          : warm ? `Serie di avvicinamento ${warmN} di ${warmTot}`
+          : `Serie ${workOrdinal(e, i) + 1} di ${e.sets.filter(isWork).length}${set.type !== 'n' ? ' · ' + SET_TYPES[set.type].name.toLowerCase() : ''}`}</div>
+        ${!allDone && !warm && sg.tone !== 'new' ? `<div class="hint">${sg.tone === 'up' ? '↑ progressione' : sg.tone === 'down' ? '↓ scarico' : 'mantieni'}</div>` : ''}
+        ${warm ? '<div class="hint warm">non a cedimento</div>' : ''}
       </div>
 
       <div class="inputs">
@@ -252,14 +264,19 @@ function bodyHTML() {
         ${[6, 7, 7.5, 8, 8.5, 9, 9.5, 10].map((v) => `<button class="rpe ${set.rpe === v ? 'on' : ''}" data-rpe="${v}">${String(v).replace('.', ',')}</button>`).join('')}
       </div>` : ''}
 
-      ${!allDone && sg.why ? `<div class="coach">${icon('bulb', 17)}<div>${esc(sg.why)}</div></div>` : ''}
+      ${warm
+        ? `<div class="coach warm">${icon('flame', 17)}<div>Serve a scaldare, non a stancare: tieni il carico leggero e fermati molto prima del cedimento. Le serie di lavoro iniziano dopo.</div></div>`
+        : daScaldare
+          ? `<div class="coach warm"><div class="grow">${icon('flame', 17)} Prima serie di lavoro: vuoi aggiungere il riscaldamento?</div>
+             <button class="btn warm sm" data-act="warm">Aggiungi</button></div>`
+          : !allDone && sg.why ? `<div class="coach">${icon('bulb', 17)}<div>${esc(sg.why)}</div></div>` : ''}
 
       <div class="cta-wrap">
         ${allDone
           ? `<button class="btn ghost lg" data-act="addset" aria-label="Aggiungi serie">${icon('plus', 18)}</button>
              <button class="btn primary lg" style="flex:1" data-act="next">Prossimo esercizio ${icon('chevR', 18)}</button>`
           : `<button class="btn ghost lg" data-act="plates" aria-label="Dischi">${icon('layers', 18)}</button>
-             <button class="btn primary lg" data-act="done">${icon('check', 20)} Completa serie</button>`}
+             <button class="btn ${warm ? 'warm' : 'primary'} lg" data-act="done">${icon('check', 20)} ${warm ? 'Riscaldamento fatto' : 'Completa serie'}</button>`}
       </div>
     </div>
 
@@ -274,7 +291,7 @@ function bodyHTML() {
         const p = isWork(s) ? prevSet(e.exId, workOrdinal(e, k)) : null;
         const st = SET_TYPES[s.type] || SET_TYPES.n;
         return `
-        <div class="set-line ${s.done ? 'done' : ''} ${!s.done && k === i ? 'cur' : ''}" data-set="${k}">
+        <div class="set-line ${s.type === 'w' ? 'w' : ''} ${s.done ? 'done' : ''} ${!s.done && k === i ? 'cur' : ''}" data-set="${k}">
           <button class="idx ${st.cls}" data-act="settype" data-k="${k}" aria-label="Tipo serie">${st.lab || (workOrdinal(e, k) + 1)}</button>
           <span class="prev">${p ? `${p.weight != null ? fmtWeight(p.weight) + '×' : ''}${p.reps}` : '—'}</span>
           <span class="val">${s.weight != null && s.weight !== '' ? fmtWeight(s.weight) : '—'}<i>×</i>${s.reps ?? '—'}${s.rpe ? `<em>@${String(s.rpe).replace('.', ',')}</em>` : ''}</span>
@@ -288,7 +305,7 @@ function bodyHTML() {
       }).join('')}
       <div class="flex gap8 mt10 wrap">
         <button class="btn ghost sm" data-act="addset">${icon('plus', 16)} Serie</button>
-        ${S.settings.warmup && !e.sets.some((s) => s.type === 'w') ? `<button class="btn ghost sm" data-act="warm">${icon('flame', 16)} Riscaldamento</button>` : ''}
+        ${S.settings.warmup && !warmTot ? `<button class="btn warm sm" data-act="warm">${icon('flame', 16)} Riscaldamento</button>` : ''}
         <button class="btn ghost sm" data-act="exnote">${icon('note', 16)} Nota</button>
         <button class="btn ghost sm" data-act="rest">${icon('timer', 16)} ${e.rest}s</button>
       </div>
@@ -305,11 +322,12 @@ function railHTML() {
   return w.exercises.map((e, k) => {
     const done = e.sets.filter((s) => s.done).length;
     const full = done === e.sets.length && e.sets.length > 0;
+    const scalda = e.sets.some((s) => s.type === 'w' && !s.done);
     const col = ssColor(e.superset);
     return `<button class="rail-item ${k === w.cursor.ex ? 'on' : ''} ${full ? 'ok' : ''}" data-act="jump" data-k="${k}"
       ${col ? `style="border-left:3px solid ${col}"` : ''}>
       <div class="n">${esc(getEx(e.exId).n)}</div>
-      <div class="p">${full ? '✓ completato' : `${done}/${e.sets.length} serie`}</div>
+      <div class="p">${full ? '✓ completato' : scalda ? `${icon('flame', 11)} riscaldamento` : `${done}/${e.sets.length} serie`}</div>
     </button>`;
   }).join('') + `<button class="rail-item add" data-act="addex" aria-label="Aggiungi esercizio">${icon('plus', 20)}</button>`;
 }

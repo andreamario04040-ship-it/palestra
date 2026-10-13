@@ -30,8 +30,10 @@ export function roundLoad(w, ex) {
     const q = Math.min(...(S.settings.plates?.length ? S.settings.plates : [1.25])) * 2;
     return Math.max(bar, bar + Math.round((w - bar) / q) * q);
   }
+  // Niente mezzi passi: su una macchina il pacco pesi sale per piastre intere e
+  // i manubri esistono solo nelle taglie che ci sono. 51,25 kg non si caricano.
   const st = stepFor(ex);
-  const q = ex?.eq === 'manubri' ? 1 : st / 2;
+  const q = ex?.eq === 'corpo' ? st / 2 : st;
   return Math.round(w / q) * q;
 }
 
