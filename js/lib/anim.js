@@ -80,7 +80,7 @@ const BASE = {
   leg: null, leg2: null,          // [gradi femore, gradi tibia]
   kneeS: 1, kneeS2: 1, elbowS: -1, elbowS2: 1,
   sw: 0, hw: 0,                   // larghezza spalle / bacino (vista frontale)
-  foot: 0, foot2: 0,              // angolo del piede (0 = orizzontale avanti)
+  foot: 0, foot2: 0,              // piede: scarto dalla perpendicolare alla tibia
   head: 0,                        // inclinazione testa
   dir: 1,
 };
@@ -130,8 +130,8 @@ export const PATTERNS = {
     props: [{ t: 'benchInc', from: [126, 112], to: [68, 76] }, { t: 'load', at: 'hand' }, { t: 'floor' }],
   },
   pushup: {
-    a: D({ hip: [92, 98], torso: -5, ankle: [44, 122], hand: [128, FLOOR], elbowS: -1, kneeS: -1, foot: 110 }),
-    b: D({ hip: [92, 112], torso: -5, ankle: [44, 124], hand: [128, FLOOR], elbowS: -1, kneeS: -1, foot: 110 }),
+    a: D({ hip: [92, 98], torso: -5, ankle: [44, 122], hand: [128, FLOOR], elbowS: -1, kneeS: -1 }),
+    b: D({ hip: [92, 112], torso: -5, ankle: [44, 124], hand: [128, FLOOR], elbowS: -1, kneeS: -1 }),
     props: [{ t: 'floor' }], spine: true,
   },
   dip: {
@@ -140,8 +140,8 @@ export const PATTERNS = {
     props: [{ t: 'rail', at: [114, 84] }],
   },
   vertPull: {
-    a: D({ hip: [100, 95], torso: 88, ankle: [86, 124], hand: [104, 26], kneeS: 1, foot: -40 }),
-    b: D({ hip: [100, 76], torso: 85, ankle: [86, 102], hand: [104, 26], kneeS: 1, foot: -40 }),
+    a: D({ hip: [100, 95], torso: 88, ankle: [86, 124], hand: [104, 26], kneeS: 1, foot: -20 }),
+    b: D({ hip: [100, 76], torso: 85, ankle: [86, 102], hand: [104, 26], kneeS: 1, foot: -20 }),
     props: [{ t: 'bar-fixed', y: 26 }],
   },
   pulldown: {
@@ -241,12 +241,12 @@ export const PATTERNS = {
   },
   calfRaise: {
     a: D({ hip: [100, 80], ankle: [100, FLOOR], arm: [-92, -90], foot: 0 }),
-    b: D({ hip: [100, 72], ankle: [100, 122], arm: [-92, -90], foot: -51 }),
+    b: D({ hip: [100, 72], ankle: [100, 122], arm: [-92, -90] }),
     props: [{ t: 'pad', from: [92, 44], to: [112, 44] }, { t: 'rig', at: [150, 40] }, { t: 'floor' }],
   },
   lunge: {
     a: D({ hip: [100, 82], torso: 86, ankle: [126, FLOOR], ankle2: [76, FLOOR], arm: [-92, -90], arm2: [-92, -90] }),
-    b: D({ hip: [100, 102], torso: 83, ankle: [126, FLOOR], ankle2: [72, 126], kneeS2: -1, arm: [-92, -90], arm2: [-92, -90], foot2: 150 }),
+    b: D({ hip: [100, 102], torso: 83, ankle: [126, FLOOR], ankle2: [72, 126], kneeS2: -1, arm: [-92, -90], arm2: [-92, -90] }),
     props: [{ t: 'load', at: 'hand' }, { t: 'load', at: 'hand2' }, { t: 'floor' }], spine: true,
   },
   stepUp: {
@@ -295,18 +295,18 @@ export const PATTERNS = {
     props: [{ t: 'rig', at: [170, 60] }, { t: 'floor' }],
   },
   legRaise: {
-    a: D({ hip: [100, 86], torso: 88, leg: [-92, -92], hand: [104, 18] }),
-    b: D({ hip: [100, 86], torso: 88, leg: [-4, 6], hand: [104, 18] }),
-    props: [{ t: 'bar-fixed', y: 18 }],
+    a: D({ hip: [100, 80], torso: 88, leg: [-92, -92], hand: [104, 12] }),
+    b: D({ hip: [100, 80], torso: 88, leg: [-4, 6], hand: [104, 12] }),
+    props: [{ t: 'bar-fixed', y: 12 }],
   },
   plank: {
-    a: D({ hip: [98, 104], torso: -7, ankle: [46, 122], hand: [134, 126], elbowS: -1, kneeS: -1, foot: 115 }),
-    b: D({ hip: [98, 106], torso: -7, ankle: [46, 123], hand: [134, 126], elbowS: -1, kneeS: -1, foot: 115 }),
+    a: D({ hip: [98, 104], torso: -7, ankle: [46, 122], hand: [134, 126], elbowS: -1, kneeS: -1 }),
+    b: D({ hip: [98, 106], torso: -7, ankle: [46, 123], hand: [134, 126], elbowS: -1, kneeS: -1 }),
     props: [{ t: 'floor' }], spine: true,
   },
   mountain: {
-    a: D({ hip: [98, 104], torso: -7, ankle: [46, 122], ankle2: [50, 126], hand: [134, 127], elbowS: -1, kneeS: 1, kneeS2: 1, foot: 115 }),
-    b: D({ hip: [98, 104], torso: -7, ankle: [92, 114], ankle2: [50, 126], hand: [134, 127], elbowS: -1, kneeS: 1, kneeS2: 1, foot: 115 }),
+    a: D({ hip: [98, 104], torso: -7, ankle: [46, 122], ankle2: [50, 126], hand: [134, 127], elbowS: -1, kneeS: 1, kneeS2: 1 }),
+    b: D({ hip: [98, 104], torso: -7, ankle: [92, 114], ankle2: [50, 126], hand: [134, 127], elbowS: -1, kneeS: 1, kneeS2: 1 }),
     props: [{ t: 'floor' }], spine: true,
   },
   twist: {
@@ -315,8 +315,8 @@ export const PATTERNS = {
     props: [{ t: 'floor' }],
   },
   abwheel: {
-    a: D({ hip: [104, 106], torso: 50, leg: [-122, 174], hand: [126, 124], elbowS: -1, foot: 150 }),
-    b: D({ hip: [104, 108], torso: 12, leg: [-122, 174], hand: [172, 126], elbowS: -1, foot: 150 }),
+    a: D({ hip: [104, 106], torso: 50, leg: [-122, 174], hand: [126, 124], elbowS: -1, foot: 198 }),
+    b: D({ hip: [104, 108], torso: 12, leg: [-122, 174], hand: [172, 126], elbowS: -1, foot: 198 }),
     props: [{ t: 'wheel', at: 'hand' }, { t: 'floor' }], spine: true,
   },
   wristCurl: {
@@ -346,12 +346,12 @@ export const PATTERNS = {
   },
   rope: {
     a: D({ sw: 22, hw: 15, hip: [100, 82], arm: [-130, -40], arm2: mir([-130, -40]), ankle: [108, FLOOR], ankle2: [92, FLOOR] }),
-    b: D({ sw: 22, hw: 15, hip: [100, 74], arm: [-130, -40], arm2: mir([-130, -40]), ankle: [108, 120], ankle2: [92, 120], foot: -30, foot2: -30 }),
+    b: D({ sw: 22, hw: 15, hip: [100, 74], arm: [-130, -40], arm2: mir([-130, -40]), ankle: [108, 120], ankle2: [92, 120], foot: -25, foot2: -25 }),
     props: [{ t: 'floor' }],
   },
   burpee: {
     a: D({ hip: [100, 76], torso: 88, arm: [-90, -88] }),
-    b: D({ hip: [98, 108], torso: -7, ankle: [48, 126], hand: [134, 128], elbowS: -1, kneeS: -1, foot: 115 }),
+    b: D({ hip: [98, 108], torso: -7, ankle: [48, 126], hand: [134, 128], elbowS: -1, kneeS: -1 }),
     props: [{ t: 'floor' }],
   },
   clean: {
@@ -366,8 +366,8 @@ export const PATTERNS = {
     props: [{ t: 'load', at: 'hand' }, { t: 'floor' }], spine: true,
   },
   sled: {
-    a: D({ hip: [92, 88], torso: 38, leg: [-130, -66], leg2: [-52, -84], hand: [136, 74], elbowS: -1 }),
-    b: D({ hip: [92, 88], torso: 38, leg: [-52, -84], leg2: [-130, -66], hand: [136, 74], elbowS: -1 }),
+    a: D({ hip: [92, 85], torso: 38, leg: [-130, -66], leg2: [-52, -84], hand: [136, 74], elbowS: -1 }),
+    b: D({ hip: [92, 85], torso: 38, leg: [-52, -84], leg2: [-130, -66], hand: [136, 74], elbowS: -1 }),
     props: [{ t: 'sledBox', at: [152, 112] }, { t: 'floor' }], spine: true,
   },
   misc: {
@@ -432,11 +432,27 @@ function skeleton(pose) {
   const [knee, ankle] = chain(hipR, legA, ankA, L.thigh, L.shin, pose.kneeS);
   const [knee2, ankle2] = chain(hipL, legB, ankB, L.thigh, L.shin, soloSua(pose.kneeS2, pose.kneeS));
 
+  /* Direzione del piede. Con un angolo assoluto il piede restava indietro
+     appena la gamba usciva dalla verticale; ma nemmeno "perpendicolare alla
+     tibia" va bene, perché in accosciata affonderebbe nel pavimento. La regola
+     è fisica: se il piede appoggia resta appoggiato — è la caviglia ad
+     assorbire l'inclinazione — altrimenti segue la tibia. */
+  const tibia = (k, a) => (Math.atan2(-(a[1] - k[1]), a[0] - k[0]) * 180) / Math.PI;
+  function footDeg(k, a, off) {
+    const dy = FLOOR - a[1];
+    if (dy <= 9) {                                   // appoggiato o sulla punta
+      const dx = Math.sqrt(Math.max(1, L.foot * L.foot - dy * dy));
+      return (Math.atan2(-dy, dx) * 180) / Math.PI + off;
+    }
+    return tibia(k, a) + 90 + off;
+  }
+  const foot2 = soloSua(pose.foot2, pose.foot);
+
   return {
     hip, sh, neck, head, headDeg, shR, shL, hipR, hipL,
     elbow, hand, elbow2, hand2, knee, ankle, knee2, ankle2,
-    toe: add(ankle, dirv(pose.foot, L.foot)),
-    toe2: add(ankle2, dirv(pose.foot2, L.foot)),
+    toe: add(ankle, dirv(footDeg(knee, ankle, pose.foot), L.foot)),
+    toe2: add(ankle2, dirv(footDeg(knee2, ankle2, foot2), L.foot)),
     shoulder: sh,
     chest: add(lerpP(sh, hip, 0.26), dirv(pose.torso - 90, 9)),
     shoulderBack: add(sh, dirv(pose.torso - 180, 4.5)),   // rack posteriore: bilanciere sui trapezi
