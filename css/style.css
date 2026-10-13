@@ -126,9 +126,12 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
 
 /* ------------------------------------------------------------- shell ---- */
 
+/* `inset: 0` su un elemento fisso copre esattamente il viewport di layout.
+   Niente dvh: in standalone su iOS vale "schermo meno la status bar", e la
+   schermata finiva ~60pt sopra il bordo inferiore. */
 #app {
-  height: 100%;
-  height: 100dvh;
+  position: fixed;
+  inset: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -519,7 +522,7 @@ select.input {
   left: 0; right: 0;
   bottom: var(--kb, 0px);
   z-index: 91;
-  max-height: calc(100dvh - var(--kb, 0px) - 24px);
+  max-height: calc(100% - var(--kb, 0px) - 24px);
   transition: bottom .18s ease;
   display: flex;
   flex-direction: column;
@@ -822,7 +825,6 @@ body.kb-open .tabbar { display: none; }
 
 .rest {
   position: fixed; inset: 0;
-  height: 100dvh;
   z-index: 95;
   background: color-mix(in srgb, var(--bg) 92%, transparent);
   backdrop-filter: blur(26px);
