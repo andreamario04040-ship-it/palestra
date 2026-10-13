@@ -98,6 +98,40 @@ function syncTabs() {
   }
 }
 
+/* ------------------------------------------------------- viewport corto --- */
+
+/**
+ * In standalone iOS può dare un viewport più corto dello schermo esattamente
+ * quanto la status bar, lasciando in fondo una striscia dove nessun elemento
+ * arriva. `height=device-height` (in index.html) di norma lo riallinea; qui
+ * misuriamo se ha funzionato davvero, così le impostazioni possono dirlo e nel
+ * caso peggiore smettiamo di sprecare anche il padding della safe area.
+ */
+export const viewportInfo = { screen: 0, view: 0, gap: 0, pwa: false };
+
+function measureViewport() {
+  const pwa = navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
+  const tall = Math.max(screen.width, screen.height);   // altezza in verticale
+  let h = Math.round(window.innerHeight);
+  const portrait = window.innerWidth < h;
+
+  // Assicurazione: se `height=device-height` avesse allungato il viewport oltre
+  // lo schermo, la barra finirebbe sotto il bordo. Meglio tornare al meta di
+  // partenza che peggiorare le cose.
+  const meta = document.querySelector('meta[name="viewport"]');
+  const base = meta?.getAttribute('data-base');
+  if (pwa && portrait && base && h > tall + 4) {
+    meta.setAttribute('content', base);
+    meta.removeAttribute('data-base');
+    h = Math.round(window.innerHeight);
+  }
+  viewportInfo.pwa = pwa;
+  viewportInfo.screen = tall;
+  viewportInfo.view = h;
+  viewportInfo.gap = pwa && portrait ? Math.max(0, tall - h) : 0;
+  document.documentElement.classList.toggle('vp-short', viewportInfo.gap > 8);
+}
+
 /* --------------------------------------------------------- solo verticale */
 
 /**
@@ -133,6 +167,8 @@ async function boot() {
   render();
   initKeyboard();
   lockPortrait();
+  measureViewport();
+  window.addEventListener('resize', measureViewport);
 
   // scorciatoia dal manifest / link diretto
   if (new URLSearchParams(location.search).get('a') === 'start') {

@@ -562,6 +562,11 @@ body.kb-open .sheet .sheet-foot { padding-bottom: 12px; }
 .sheet .sheet-foot { padding: 12px 18px calc(16px + var(--safe-b)); border-top: 1px solid var(--line); flex: none; display: flex; gap: 10px; }
 .sheet .sheet-foot .btn { flex: 1; }
 
+/* Se nonostante tutto iOS tiene il viewport più corto dello schermo, la safe
+   area in fondo è già fuori dal viewport: riservarle spazio lo sprecherebbe
+   due volte. */
+html.vp-short { --safe-pad-b: 0px; }
+
 /* ------------------------------------------------------- solo verticale --- */
 
 /* iOS ignora sia `orientation` nel manifest sia `screen.orientation.lock()`:

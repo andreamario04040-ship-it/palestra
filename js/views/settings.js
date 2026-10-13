@@ -3,9 +3,9 @@
 import { S, save, exportJSON, importJSON, resetAll } from '../lib/store.js';
 import { esc, $, $$, on, openSheet, closeSheet, confirmSheet, promptSheet, toast, fmtWeight, fmtDate } from '../lib/dom.js';
 import { icon } from '../lib/icons.js';
-import { applyTheme, render, go, checkForUpdate } from '../app.js';
+import { applyTheme, render, go, checkForUpdate, viewportInfo } from '../app.js';
 
-const VERSION = '1.1.3';
+const VERSION = '1.1.4';
 
 function toggleRow(key, title, sub, group = 'settings') {
   const v = group === 'settings' ? S.settings[key] : S[group][key];
@@ -152,6 +152,8 @@ export default {
         <button class="row" data-a="update"><span class="avatar">${icon('refresh', 19)}</span>
           <span class="grow"><span class="t">Aggiorna l’app</span><span class="s">Scarica l’ultima versione e ricarica</span></span>
           <span class="pill">${VERSION}</span></button>
+        <div class="row"><span class="avatar">${icon('phone', 19)}</span>
+          <span class="grow"><span class="t">Schermo</span><span class="s">${viewportInfo.view} di ${viewportInfo.screen} punti${viewportInfo.gap ? ` · ne mancano ${viewportInfo.gap}` : ' · tutto pieno'}</span></span></div>
       </div></div>
       <div style="height:16px"></div>`;
   },
