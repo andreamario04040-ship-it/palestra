@@ -122,7 +122,8 @@ export const PATTERNS = {
   horizPush: {
     a: D({ hip: [112, 100], torso: 177, ankle: [144, FLOOR], hand: [82, 86], elbowS: -1 }),
     b: D({ hip: [112, 100], torso: 177, ankle: [144, FLOOR], hand: [78, 60], elbowS: -1 }),
-    props: [{ t: 'bench', from: [58, 106], to: [126, 106] }, { t: 'load', at: 'hand' }, { t: 'rig', at: [168, 56], rails: [62, 98] }, { t: 'floor' }],
+    props: [{ t: 'bench', from: [58, 106], to: [126, 106] }, { t: 'load', at: 'hand', rails: [62, 98] },
+      { t: 'rig', at: [168, 56], rails: [62, 98] }, { t: 'floor' }],
   },
   inclinePush: {
     a: D({ hip: [118, 104], torso: 160, ankle: [146, FLOOR], hand: [84, 80], elbowS: -1 }),
@@ -147,12 +148,12 @@ export const PATTERNS = {
   pulldown: {
     a: D({ hip: [96, 98], torso: 96, ankle: [126, FLOOR], hand: [108, 30], kneeS: 1 }),
     b: D({ hip: [96, 98], torso: 102, hand: [112, 60], ankle: [126, FLOOR], kneeS: 1 }),
-    props: [{ t: 'cable', from: [106, 10], to: 'hand' }, { t: 'load', at: 'hand', w: 18 }, { t: 'seat', at: [96, 104] }, { t: 'rig', at: [152, 10] }, { t: 'floor' }],
+    props: [{ t: 'cable', from: [106, 10], to: 'hand' }, { t: 'load', at: 'hand', w: 18, pull: [106, 10] }, { t: 'seat', at: [96, 104] }, { t: 'rig', at: [152, 10] }, { t: 'floor' }],
   },
   horizPull: {
     a: D({ hip: [92, 100], torso: 76, ankle: [134, 124], hand: [154, 88], elbowS: -1, kneeS: 1 }),
     b: D({ hip: [92, 100], torso: 96, ankle: [134, 124], hand: [112, 86], elbowS: -1, kneeS: 1 }),
-    props: [{ t: 'cable', from: [186, 90], to: 'hand' }, { t: 'load', at: 'hand', w: 12 }, { t: 'seat', at: [92, 106] }, { t: 'floor' }], spine: true,
+    props: [{ t: 'cable', from: [186, 90], to: 'hand' }, { t: 'load', at: 'hand', w: 12, pull: [186, 90] }, { t: 'seat', at: [92, 106] }, { t: 'floor' }], spine: true,
   },
   bentRow: {
     a: D({ hip: [86, 84], torso: 32, ankle: [92, FLOOR], hand: [116, 108] }),
@@ -187,7 +188,7 @@ export const PATTERNS = {
   facePull: {
     a: D({ arm: [-4, 6], elbowS: 1 }),
     b: D({ arm: [14, 150], elbowS: 1 }),
-    props: [{ t: 'cable', from: [190, 36], to: 'hand' }, { t: 'load', at: 'hand', w: 14 }, { t: 'floor' }],
+    props: [{ t: 'cable', from: [190, 36], to: 'hand' }, { t: 'load', at: 'hand', w: 14, pull: [190, 36] }, { t: 'floor' }],
   },
   uprightRow: {
     a: D({ sw: 23, hw: 15, hand: [110, 88], hand2: [90, 88], ankle: [108, FLOOR], ankle2: [92, FLOOR], elbowS: 1, elbowS2: -1 }),
@@ -217,7 +218,7 @@ export const PATTERNS = {
   pushdown: {
     a: D({ arm: [-92, 28] }),
     b: D({ arm: [-92, -88] }),
-    props: [{ t: 'cable', from: [126, 10], to: 'hand' }, { t: 'load', at: 'hand', w: 13 }, { t: 'rig', at: [152, 10] }, { t: 'floor' }],
+    props: [{ t: 'cable', from: [126, 10], to: 'hand' }, { t: 'load', at: 'hand', w: 13, pull: [126, 10] }, { t: 'rig', at: [152, 10] }, { t: 'floor' }],
   },
   kickback: {
     a: D({ hip: [88, 86], torso: 32, ankle: [92, FLOOR], arm: [-150, -80] }),
@@ -282,7 +283,7 @@ export const PATTERNS = {
   flyCable: {
     a: D({ sw: 23, hw: 15, hip: [100, 82], torso: 86, hand: [152, 52], hand2: [48, 52], ankle: [110, FLOOR], ankle2: [90, 124], elbowS: 1, elbowS2: -1 }),
     b: D({ sw: 23, hw: 15, hip: [100, 82], torso: 86, hand: [108, 84], hand2: [92, 84], ankle: [110, FLOOR], ankle2: [90, 124], elbowS: 1, elbowS2: -1 }),
-    props: [{ t: 'cable', from: [188, 18], to: 'hand' }, { t: 'cable', from: [12, 18], to: 'hand2' }, { t: 'load', at: 'hand', w: 10 }, { t: 'load', at: 'hand2', w: 10 }, { t: 'floor' }],
+    props: [{ t: 'cable', from: [188, 18], to: 'hand' }, { t: 'cable', from: [12, 18], to: 'hand2' }, { t: 'load', at: 'hand', w: 10, pull: [188, 18] }, { t: 'load', at: 'hand2', w: 10, pull: [12, 18] }, { t: 'floor' }],
   },
   pullover: {
     a: D({ hip: [112, 100], torso: 177, ankle: [144, FLOOR], arm: [150, 150], elbowS: 1 }),
@@ -375,14 +376,164 @@ export const PATTERNS = {
     b: D({ hip: [100, 75], arm: [-90, -72] }),
     props: [{ t: 'floor' }],
   },
+
+  /* ------------------------------------------------------------- macchine --
+     Alla macchina non si impugna un peso libero: ci si siede dentro e si muove
+     la sua leva. Questi pattern sostituiscono quelli con i pesi liberi quando
+     l'attrezzo dell'esercizio è una macchina (vedi EQ_PAT), perché il gesto
+     è un altro: cambia la postura, non solo l'attrezzo in mano.             */
+
+  /* Seduto, schienale dietro, spinta orizzontale sulle maniglie. */
+  machPress: {
+    a: D({ hip: [92, 100], torso: 94, leg: [-8, -78], arm: [-100, 29] }),
+    mid: D({ hip: [92, 100], torso: 94, leg: [-8, -78], arm: [-70, 26] }),
+    b: D({ hip: [92, 100], torso: 94, leg: [-8, -78], arm: [-20, -10] }),
+    props: [
+      { t: 'seat', at: [92, 104] }, { t: 'pad', from: [82, 110], to: [77, 58] },
+      { t: 'load', at: 'hand', cable: [168, 56] },
+      { t: 'rig', at: [168, 56] }, { t: 'floor' },
+    ],
+  },
+  /* Pectoral machine: i bracci pivotano in alto e si chiudono davanti. */
+  machFly: {
+    a: D({ hip: [92, 100], torso: 92, leg: [-8, -78], arm: [160, 90] }),
+    b: D({ hip: [92, 100], torso: 92, leg: [-8, -78], arm: [20, 90] }),
+    props: [
+      { t: 'seat', at: [92, 104] }, { t: 'pad', from: [82, 110], to: [79, 76] },
+      { t: 'frame', pts: [[91, 12], [91, 5], [170, 5], [170, 40]] },
+      { t: 'lever', at: [91, 12], to: 'hand', ext: 3 },
+      { t: 'load', at: 'hand', pull: [91, 12] },
+      { t: 'rig', at: [170, 40] }, { t: 'floor' },
+    ],
+  },
+  /* Shoulder press: seduto, le maniglie salgono sopra la testa. */
+  machShoulder: {
+    a: D({ hip: [92, 100], torso: 92, leg: [-8, -78], arm: [-40, 95] }),
+    b: D({ hip: [92, 100], torso: 92, leg: [-8, -78], arm: [85, 88] }),
+    props: [
+      { t: 'seat', at: [92, 104] }, { t: 'pad', from: [82, 110], to: [78, 66] },
+      { t: 'frame', pts: [[136, 34], [136, 10], [172, 10], [172, 42]] },
+      { t: 'lever', at: [136, 34], to: 'hand', ext: 3 },
+      { t: 'load', at: 'hand', pull: [136, 34] },
+      { t: 'rig', at: [172, 42] }, { t: 'floor' },
+    ],
+  },
+  /* Reverse pec deck: di fronte, seduto, i bracci si aprono all'indietro. */
+  machRearDelt: {
+    a: D({ sw: 23, hw: 15, hip: [100, 92], torso: 84, hand: [126, 58], hand2: [74, 58],
+      ankle: [112, 126], ankle2: [88, 126], elbowS: 1, elbowS2: -1, kneeS: 1, kneeS2: -1 }),
+    b: D({ sw: 23, hw: 15, hip: [100, 92], torso: 84, hand: [150, 52], hand2: [50, 52],
+      ankle: [112, 126], ankle2: [88, 126], elbowS: 1, elbowS2: -1, kneeS: 1, kneeS2: -1 }),
+    props: [
+      { t: 'seat', at: [100, 96] }, { t: 'frame', pts: [[100, 96], [100, 128]], w: 9 },
+      { t: 'frame', pts: [[73, 10], [174, 10], [174, 44]] },
+      { t: 'lever', at: [127, 10], to: 'hand', ext: 3 },
+      { t: 'lever', at: [73, 10], to: 'hand2', ext: 3 },
+      { t: 'load', at: 'hand', pull: [127, 10] }, { t: 'load', at: 'hand2', pull: [73, 10] },
+      { t: 'rig', at: [174, 44] }, { t: 'floor' },
+    ],
+  },
+  /* Alzate laterali alla macchina: i cuscinetti premono sulle braccia. */
+  machLatRaise: {
+    a: D({ sw: 23, hw: 15, hip: [100, 90], torso: 90, arm: [-78, -84], arm2: mir([-78, -84]),
+      ankle: [112, 126], ankle2: [88, 126], kneeS: 1, kneeS2: -1 }),
+    b: D({ sw: 23, hw: 15, hip: [100, 90], torso: 90, arm: [4, -2], arm2: mir([4, -2]),
+      ankle: [112, 126], ankle2: [88, 126], kneeS: 1, kneeS2: -1 }),
+    props: [
+      { t: 'seat', at: [100, 94] }, { t: 'frame', pts: [[100, 94], [100, 128]], w: 9 },
+      { t: 'frame', pts: [[100, 49], [100, 18], [176, 18], [176, 46]] },
+      { t: 'lever', at: [99, 49], to: 'elbow' }, { t: 'lever', at: [101, 49], to: 'elbow2' },
+      { t: 'cuff', at: 'elbow', from: 'shR', off: 3, len: 13, front: true },
+      { t: 'cuff', at: 'elbow2', from: 'shL', off: 3, len: 13, front: true },
+      { t: 'load', at: 'hand', pull: [99, 49] }, { t: 'load', at: 'hand2', pull: [101, 49] },
+      { t: 'rig', at: [176, 46] }, { t: 'floor' },
+    ],
+  },
+  /* Pullover alla macchina: gomiti sui cuscinetti, perno all'altezza spalla. */
+  machPullover: {
+    a: D({ hip: [92, 100], torso: 92, leg: [-8, -78], arm: [140, 140] }),
+    b: D({ hip: [92, 100], torso: 92, leg: [-8, -78], arm: [-40, -42] }),
+    props: [
+      { t: 'seat', at: [92, 104] }, { t: 'pad', from: [82, 110], to: [79, 80] },
+      { t: 'frame', pts: [[91, 68], [56, 68]] },
+      { t: 'lever', at: [91, 68], to: 'elbow', ext: 4 },
+      { t: 'cuff', at: 'elbow', from: 'shR', off: 2, len: 13, front: true },
+      { t: 'rig', at: [56, 68] }, { t: 'floor' },
+    ],
+  },
+  /* Hack squat: slitta inclinata, cuscinetti sulle spalle, piedi sulla pedana. */
+  hackSquat: {
+    a: D({ hip: [94, 84], torso: 108, ankle: [114, 127], arm: [-80, -85], kneeS: 1 }),
+    b: D({ hip: [84, 106], torso: 108, ankle: [114, 127], arm: [-80, -85], kneeS: 1 }),
+    props: [
+      { t: 'frame', pts: [[82, 26], [36, 127]], w: 3.5 },
+      { t: 'pad', from: [80, 39], to: [60, 83] },
+      { t: 'pad', from: [100, 128], to: [144, 128] },
+      { t: 'cuff', at: 'shoulder', from: 'hip', off: 2, len: 15, w: 7, front: true },
+      { t: 'disc', at: [52, 92], r: 7.5 }, { t: 'disc', at: [45, 108], r: 7.5 },
+      { t: 'floor' },
+    ],
+  },
+  /* Crunch ai cavi: in ginocchio davanti alla colonna, corda alla fronte. */
+  kneelCrunch: {
+    a: D({ hip: [96, 104], torso: 72, leg: [-85, 175], foot: 180,
+      hand: { rel: 'shoulder', d: [6, -6] }, elbowS: 1 }),
+    b: D({ hip: [96, 104], torso: 35, leg: [-85, 175], foot: 180,
+      hand: { rel: 'shoulder', d: [6, -6] }, elbowS: 1 }),
+    props: [
+      { t: 'cable', from: [166, 14], to: 'hand' },
+      { t: 'load', at: 'hand', w: 12, pull: [166, 14] },
+      { t: 'rig', at: [166, 14] }, { t: 'floor' },
+    ],
+  },
+  /* Woodchopper: la fune scende dalla carrucola alta e si tira di traverso. */
+  cableChop: {
+    a: D({ sw: 23, hw: 16, hip: [100, 84], torso: 88, ankle: [112, FLOOR], ankle2: [88, FLOOR],
+      hand: [80, 38], hand2: [76, 40], elbowS: 1, elbowS2: -1, kneeS: 1, kneeS2: -1 }),
+    b: D({ sw: 23, hw: 16, hip: [100, 84], torso: 88, ankle: [112, FLOOR], ankle2: [88, FLOOR],
+      hand: [116, 76], hand2: [112, 74], elbowS: 1, elbowS2: -1, kneeS: 1, kneeS2: -1 }),
+    props: [
+      { t: 'cable', from: [20, 20], to: 'hand' },
+      { t: 'load', at: 'hand', w: 12, pull: [20, 20] },
+      { t: 'rig', at: [20, 20] }, { t: 'floor' },
+    ],
+  },
+  /* Crunch alla macchina: il braccio della macchina ruota al livello del sedile. */
+  machCrunch: {
+    a: D({ hip: [92, 102], torso: 100, leg: [-8, -78], hand: { rel: 'shoulder', d: [12, -4] }, elbowS: 1, head: -8 }),
+    b: D({ hip: [92, 102], torso: 68, leg: [-8, -78], hand: { rel: 'shoulder', d: [12, -4] }, elbowS: 1, head: -16 }),
+    props: [
+      { t: 'seat', at: [92, 106] },
+      { t: 'frame', pts: [[118, 128], [118, 112], [168, 112]] },
+      { t: 'lever', at: [118, 112], to: 'hand', ext: 4, front: true },
+      { t: 'load', at: 'hand', pull: [118, 112] },
+      { t: 'rig', at: [168, 46] }, { t: 'floor' },
+    ],
+  },
 };
 
 /* alias di pattern che condividono la stessa animazione */
 const ALIAS = { jump: 'squat', hang: 'vertPull' };
 
-export function patternOf(key) {
+/* Con la macchina il gesto non è lo stesso con un attrezzo diverso: è un
+   altro gesto. L'esercizio tiene il suo `p` (la panca resta una spinta
+   orizzontale) e qui si sceglie la variante giusta per l'attrezzo. */
+const EQ_PAT = {
+  horizPush: { macchina: 'machPress' },
+  fly: { macchina: 'machFly' },
+  vertPush: { macchina: 'machShoulder' },
+  rearDelt: { macchina: 'machRearDelt' },
+  lateralRaise: { macchina: 'machLatRaise' },
+  pullover: { macchina: 'machPullover' },
+  squat: { macchina: 'hackSquat' },
+  crunch: { macchina: 'machCrunch', cavi: 'kneelCrunch' },
+  twist: { cavi: 'cableChop' },
+};
+
+export function patternOf(key, eq) {
   const k = ALIAS[key] || key;
-  return PATTERNS[k] || PATTERNS.misc;
+  const v = eq && EQ_PAT[k] && EQ_PAT[k][eq];
+  return PATTERNS[v] || PATTERNS[k] || PATTERNS.misc;
 }
 
 /* ---------------------------------------------------------- scheletro ---- */
@@ -560,7 +711,8 @@ function pathEl(parent, cls) {
   parent.appendChild(e);
   return e;
 }
-const PROP_STATIC = new Set(['floor', 'bar-fixed', 'bench', 'benchInc', 'seat', 'rail', 'box', 'pad', 'sledBox']);
+/* Attrezzi che hanno un telaio: solo per questi si disegnano leve e cuscinetti. */
+const MACH = new Set(['macchina', 'cavi', 'smith']);
 
 /** Crea il nodo SVG di un prop; ritorna {node, update(sk)}. */
 function makeProp(g, spec, eq) {
@@ -647,6 +799,39 @@ function makeProp(g, spec, eq) {
       const c = circ(g, 'p-eq-f', 6);
       return (sk) => setC(c, at(sk, spec.at));
     }
+    /* Telaio: la spezzata di montanti e traverse che regge i perni. */
+    case 'frame': {
+      if (!MACH.has(eq)) return null;
+      for (let i = 1; i < spec.pts.length; i++) setLine(line(g, 'p-eq', spec.w || 3), spec.pts[i - 1], spec.pts[i]);
+      return null;
+    }
+    /* Braccio della macchina: perno fisso sul telaio, asta fino al punto di
+       presa. È questo che dice che la mano non regge un peso libero ma muove
+       la leva della macchina. */
+    case 'lever': {
+      if (!MACH.has(eq)) return null;
+      const arm = line(g, 'p-eq', spec.w || 3.4);
+      setC(circ(g, 'p-eq-f', 2.6), spec.at);
+      return (sk) => {
+        const p = at(sk, spec.to);
+        const dx = p[0] - spec.at[0], dy = p[1] - spec.at[1];
+        const d = Math.hypot(dx, dy) || 1, e = spec.ext || 0;
+        setLine(arm, spec.at, [p[0] + (dx / d) * e, p[1] + (dy / d) * e]);
+      };
+    }
+    /* Cuscinetto che preme su un arto: spalle dell'hack squat, braccia della
+       macchina per le alzate laterali, gomiti del pullover. */
+    case 'cuff': {
+      if (!MACH.has(eq)) return null;
+      const padL = line(g, 'p-eq', spec.w || 6.5);
+      return (sk) => {
+        const a2 = at(sk, spec.at), b2 = at(sk, spec.from);
+        const dx = a2[0] - b2[0], dy = a2[1] - b2[1], d = Math.hypot(dx, dy) || 1;
+        const ux = dx / d, uy = dy / d, h = (spec.len || 12) / 2, o = spec.off || 0;
+        const c = [a2[0] + ux * o, a2[1] + uy * o];
+        setLine(padL, [c[0] - uy * h, c[1] + ux * h], [c[0] + uy * h, c[1] - ux * h]);
+      };
+    }
     case 'wheel': {
       const c = circ(g, 'p-w', spec.r || 8);
       if (Array.isArray(spec.at)) { setC(c, spec.at); return null; }
@@ -685,20 +870,35 @@ function makeProp(g, spec, eq) {
         const c = circ(g, 'p-w', 9), i = circ(g, 'p-w-i', 2.6);
         return (sk) => { const p = at(sk, pt); setC(c, p); setC(i, p); };
       }
-      // bilanciere, multipower, EZ, maniglia di cavo o macchina
-      const machine = eq === 'cavi' || eq === 'macchina';
-      const w = eq === 'ez' ? 14 : spec.w || (machine ? 12 : 22);
-      const r = machine ? 3.2 : 7;
+      /* Cavo o macchina: in mano non c'è un peso ma un'impugnatura, e
+         l'impugnatura è sempre attaccata a qualcosa. Niente dischi alle
+         estremità (erano la ragione per cui sembrava un manubrio) e asse
+         perpendicolare al tiro, come una maniglia che si impugna davvero.
+         `cable` disegna anche il cavo, `pull` dice solo da che parte tira. */
+      if (eq === 'cavi' || eq === 'macchina') {
+        const grip = line(g, 'p-w-l', 5.2);
+        const cab = spec.cable ? line(g, 'p-cable', 1.8) : null;
+        if (cab) setC(circ(g, 'p-eq-f', 4), spec.cable);
+        return (sk) => {
+          const p = at(sk, pt);
+          const anc = spec.cable || spec.pull || [p[0], p[1] - 40];
+          const dx = anc[0] - p[0], dy = anc[1] - p[1], d = Math.hypot(dx, dy) || 1;
+          const h = (spec.w || 11) / 2;
+          setLine(grip, [p[0] + (dy / d) * h, p[1] - (dx / d) * h], [p[0] - (dy / d) * h, p[1] + (dx / d) * h]);
+          if (cab) setLine(cab, spec.cable, p);
+        };
+      }
+      // bilanciere, multipower, EZ
+      const w = eq === 'ez' ? 14 : spec.w || 22;
+      const guide = eq === 'smith' && spec.rails ? spec.rails : null;
       const b = line(g, 'p-w-l', 3.2);
-      const c1 = circ(g, 'p-w', r), c2 = circ(g, 'p-w', r);
-      const cab = eq === 'cavi' && spec.cable ? line(g, 'p-cable', 1.8) : null;
-      if (cab) { const pul = circ(g, 'p-eq-f', 4); setC(pul, spec.cable); }
+      const c1 = circ(g, 'p-w', 7), c2 = circ(g, 'p-w', 7);
       return (sk) => {
         const p = pt2 ? lerpP(at(sk, pt), at(sk, pt2), 0.5) : at(sk, pt);
         const half = (pt2 ? Math.hypot(at(sk, pt)[0] - at(sk, pt2)[0], at(sk, pt)[1] - at(sk, pt2)[1]) / 2 + 8 : w / 2);
-        setLine(b, [p[0] - half, p[1]], [p[0] + half, p[1]]);
-        setC(c1, [p[0] - half, p[1]]); setC(c2, [p[0] + half, p[1]]);
-        if (cab) setLine(cab, spec.cable, p);
+        const x1 = guide ? guide[0] : p[0] - half, x2 = guide ? guide[1] : p[0] + half;
+        setLine(b, [x1, p[1]], [x2, p[1]]);
+        setC(c1, [x1, p[1]]); setC(c2, [x2, p[1]]);
       };
     }
     /* Telaio: colonna e pacco pesi per le macchine, guide per il multipower. */
@@ -768,7 +968,7 @@ export function mountFigure(host, src, { period = 2600, cls = 'exfig', cue = tru
   const gCue = document.createElementNS(NS, 'g');
   svg.append(gProps, gBack, gBody, gFront, gFocus, gWeights, gCue);
 
-  let pat = patternOf(key);
+  let pat = patternOf(key, eq);
   let propUpd = [];
 
   const shadow = document.createElementNS(NS, 'ellipse');
@@ -802,7 +1002,8 @@ export function mountFigure(host, src, { period = 2600, cls = 'exfig', cue = tru
     gWeights.innerHTML = '';
     propUpd = [];
     for (const spec of pat.props || []) {
-      const target = ['disc', 'bar', 'bar2', 'db', 'plate', 'wheel', 'load'].includes(spec.t) ? gWeights : gProps;
+      const davanti = spec.front || ['disc', 'bar', 'bar2', 'db', 'plate', 'wheel', 'load'].includes(spec.t);
+      const target = davanti ? gWeights : gProps;
       const u = makeProp(target, spec, eq);
       if (u) propUpd.push(u);
     }
@@ -898,8 +1099,9 @@ export function mountFigure(host, src, { period = 2600, cls = 'exfig', cue = tru
 
   return {
     el: svg,
-    setPattern(src2) { pat = patternOf(typeof src2 === 'string' ? src2 : src2?.p);
-      if (src2 && typeof src2 !== 'string') { muscles = src2.m || []; eq = src2.eq || eq; } build(); },
+    setPattern(src2) {
+      if (src2 && typeof src2 !== 'string') { muscles = src2.m || []; eq = src2.eq || eq; }
+      pat = patternOf(typeof src2 === 'string' ? src2 : src2?.p, eq); build(); },
     destroy() { registry.delete(entry); host.innerHTML = ''; },
   };
 }

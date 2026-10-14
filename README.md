@@ -37,7 +37,7 @@ tiene **tutti i dati sul telefono**. Nessun account, nessun server, nessun abbon
 - calendario e heatmap della costanza;
 - peso corporeo e circonferenze.
 
-**Catalogo**: 107 esercizi con muscoli coinvolti, attrezzo, cue di esecuzione, errori comuni
+**Catalogo**: 110 esercizi con muscoli coinvolti, attrezzo, cue di esecuzione, errori comuni
 e animazione del movimento. Puoi aggiungere esercizi tuoi.
 
 ## Dove finiscono i dati
@@ -71,7 +71,7 @@ css/style.css           design system completo
 js/app.js               bootstrap, router, tab bar, tema
 js/lib/store.js         stato + persistenza locale + indici (PR, storico)
 js/lib/coach.js         progressione carichi, dischi, riscaldamento, analisi
-js/lib/anim.js          motore animazioni (scheletro 2D con IK, ~50 pattern)
+js/lib/anim.js          motore animazioni (figura 2D con IK, ~60 pattern)
 js/lib/charts.js        grafici SVG, heatmap, calendario, mappa muscolare
 js/lib/dom.js           helper DOM, formattazione, bottom sheet, audio
 js/lib/icons.js         set di icone inline
@@ -79,6 +79,7 @@ js/data/exercises.js    database esercizi
 js/data/templates.js    schede pronte + parser import testuale
 js/views/*.js           schermate (home, schede, allenamento, diario, statistiche, …)
 tools/make-assets.mjs   generatore di icone e splash (PNG senza dipendenze)
+tools/figures.html      provino: tutte le figure a confronto, per lavorare sulle animazioni
 ```
 
 Nessuna dipendenza, nessun build step: è JavaScript a moduli servito così com'è.
@@ -90,3 +91,6 @@ python3 -m http.server 8791
 ```
 
 Poi apri http://localhost:8791. Per rigenerare icone e splash: `node tools/make-assets.mjs`.
+
+Per lavorare sulle animazioni c'è un provino a `/tools/figures.html`: mostra ogni esercizio
+in due fotogrammi fermi (`?ph=0,0.2,0.4` per sceglierne altri), con filtro per attrezzo o id.
