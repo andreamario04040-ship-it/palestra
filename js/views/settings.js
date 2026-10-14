@@ -5,7 +5,7 @@ import { esc, $, $$, on, openSheet, closeSheet, confirmSheet, promptSheet, toast
 import { icon } from '../lib/icons.js';
 import { applyTheme, render, go, checkForUpdate, viewportInfo } from '../app.js';
 
-const VERSION = '1.6.1';
+const VERSION = '1.7.0';
 
 function toggleRow(key, title, sub, group = 'settings') {
   const v = group === 'settings' ? S.settings[key] : S[group][key];

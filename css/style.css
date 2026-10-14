@@ -839,6 +839,13 @@ html.vp-short body {
 .warm-bar .wb-note { text-transform: none; letter-spacing: 0; font-weight: 650; opacity: .8; }
 .set-head .big.warm { color: var(--warn); }
 .set-head .hint.warm { color: var(--warn); }
+/* la spinta motivazionale: deve staccarsi dal consiglio tecnico */
+.coach.push {
+  background: color-mix(in srgb, var(--acc) 15%, transparent);
+  border-color: color-mix(in srgb, var(--acc) 34%, transparent);
+}
+.coach.push svg { color: var(--acc); }
+
 .coach.warm {
   background: color-mix(in srgb, var(--warn) 13%, transparent);
   border-color: color-mix(in srgb, var(--warn) 26%, transparent);

@@ -20,6 +20,7 @@ import {
 } from '../lib/dom.js';
 import { icon } from '../lib/icons.js';
 import { mountFigure } from '../lib/anim.js';
+import { challenge, resetChallenges } from '../lib/motivate.js';
 import { ring } from '../lib/charts.js';
 import { exerciseSheet, pickExercise } from './exercises.js';
 
@@ -39,6 +40,20 @@ function buildExercise(row) {
   const ex = getEx(row.exId);
   const n = Math.max(1, row.sets || 3);
   const sets = [];
+
+  /* Serie di avvicinamento previste dalla scheda: vengono prima di quelle di
+     lavoro, con i carichi della rampa. Se il carico di lavoro non è ancora
+     noto restano da compilare, ma la struttura c'è. */
+  const nw = row.warm ? 0 : Math.max(0, Math.min(5, row.warmSets || 0));
+  if (nw) {
+    const work = Number(suggest(row.exId, 0, row).weight) || 0;
+    const rampa = warmupSets(work, ex, nw);
+    for (let i = 0; i < nw; i++) {
+      const r = rampa[i];
+      sets.push({ id: uid(), weight: r ? r.weight : null, reps: r ? r.reps : null, rpe: null, type: 'w', done: false });
+    }
+  }
+
   for (let i = 0; i < n; i++) {
     const sg = suggest(row.exId, i, row);
     sets.push({ id: uid(), weight: sg.weight, reps: sg.reps, rpe: null, type: row.warm ? 'w' : 'n', done: false });
@@ -52,6 +67,7 @@ function buildExercise(row) {
     note: row.note || '',
     superset: row.superset || null,
     warm: !!row.warm,
+    warmSets: nw,
     sets,
   };
 }
@@ -72,6 +88,7 @@ export function startWorkout(routine, day) {
     prBefore,
   };
   save();
+  resetChallenges();
   requestWakeLock();
   import('../app.js').then((m) => m.render());
 }
@@ -307,6 +324,8 @@ function bodyHTML() {
       <div class="flex gap8 mt10 wrap">
         <button class="btn ghost sm" data-act="addset">${icon('plus', 16)} Serie</button>
         ${S.settings.warmup && !warmTot ? `<button class="btn warm sm" data-act="warm">${icon('flame', 16)} Riscaldamento</button>` : ''}
+        ${e.sets.some((s) => !s.done) && w.exercises.filter((x) => x.sets.some((y) => !y.done)).length > 1
+          ? `<button class="btn ghost sm" data-act="later">${icon('clock', 16)} Posticipa</button>` : ''}
         <button class="btn ghost sm" data-act="exnote">${icon('note', 16)} Nota</button>
         <button class="btn ghost sm" data-act="rest">${icon('timer', 16)} ${e.rest}s</button>
       </div>
@@ -504,7 +523,8 @@ function showRest() {
   const ex = e ? getEx(e.exId) : null;
   const i = e ? clamp(w.cursor.set, 0, e.sets.length - 1) : 0;
   const nxt = e ? e.sets[i] : null;
-  const tip = e ? tipFor(e.exId, e.sets.filter((s) => s.done).length) : null;
+  const sfida = e ? challenge(w, e, nxt) : null;
+  const tip = sfida ? null : (e ? tipFor(e.exId, e.sets.filter((s) => s.done).length) : null);
 
   el.innerHTML = `
     <div class="lab">Recupero</div>
@@ -517,6 +537,7 @@ function showRest() {
       <div class="v">${esc(ex.n)}</div>
       <div class="w">${nxt?.weight != null ? fmtWeight(nxt.weight) + ' kg × ' : ''}${nxt?.reps ?? ''} ${nxt?.reps ? 'rip.' : ''} · serie ${i + 1}/${e.sets.length}</div>
     </div>` : ''}
+    ${sfida ? `<div class="coach push" style="margin:12px 0 0;max-width:360px">${icon(sfida.forte ? 'trophy' : 'flame', 17)}<div>${esc(sfida.txt)}</div></div>` : ''}
     ${tip ? `<div class="coach" style="margin:12px 0 0;max-width:360px">${icon('bulb', 17)}<div>${esc(tip)}</div></div>` : ''}
     <div class="ctr">
       <button class="btn ghost" data-r="-15">−15s</button>
@@ -695,6 +716,7 @@ function applyToRoutine(w, { routine, day }) {
       note: e.note || '',
       superset: e.superset || null,
       warm: !!e.warm,
+      warmSets: e.warm ? 0 : e.sets.filter((s) => s.type === 'w').length,
     }));
   save();
   toast('Scheda aggiornata');
@@ -708,6 +730,7 @@ function saveAsRoutine(w, name) {
       exercises: w.exercises.filter((e) => e.sets.some((s) => s.done)).map((e) => ({
         id: uid(), exId: e.exId, sets: Math.max(1, e.warm ? e.sets.length : e.sets.filter(isWork).length),
         reps: e.targetReps, rest: e.rest, note: e.note || '', superset: e.superset || null, warm: !!e.warm,
+        warmSets: e.warm ? 0 : e.sets.filter((s) => s.type === 'w').length,
       })),
     }],
   };
@@ -799,6 +822,12 @@ export function mountWorkout(root) {
     if (n >= 0) { w.cursor.ex = n; w.cursor.set = w.exercises[n].sets.findIndex((s) => !s.done); refresh({ figure: true }); }
     else finishSheet();
   });
+  h('[data-act="later"]', () => {
+    readInputs();
+    const dopo = postponeExercise();
+    refresh({ figure: true });
+    toast(dopo ? `${icon('clock', 15)} Rimandato dopo ${esc(dopo)}` : 'È già l’ultimo esercizio', dopo ? '' : 'err');
+  });
   h('[data-act="addset"]', () => {
     const e = curEx(); if (!e) return;
     readInputs();
@@ -877,6 +906,34 @@ export function mountWorkout(root) {
   });
 }
 
+/**
+ * Macchinario occupato: sposta l'esercizio — o tutto il suo superset — subito
+ * dopo il prossimo ancora da fare, e porta avanti il cursore. Premendo ancora
+ * scivola più giù.
+ * @returns il nome dell'esercizio dopo cui è finito, null se non c'è dove.
+ */
+function postponeExercise() {
+  const w = W();
+  const e = curEx();
+  if (!e) return null;
+
+  const gruppo = e.superset ? w.exercises.filter((x) => x.superset === e.superset) : [e];
+  const ultimo = w.exercises.lastIndexOf(gruppo[gruppo.length - 1]);
+  const libero = (x) => x.sets.some((y) => !y.done);
+  // prima cerco dopo di lui; se l'allenamento è agli sgoccioli, riparto da capo
+  const seguente = w.exercises.slice(ultimo + 1).find(libero)
+    || w.exercises.slice(0, w.exercises.indexOf(gruppo[0])).find(libero);
+  if (!seguente) return null;
+
+  const resto = w.exercises.filter((x) => !gruppo.includes(x));
+  resto.splice(resto.indexOf(seguente) + 1, 0, ...gruppo);
+  w.exercises = resto;
+  w.cursor.ex = w.exercises.indexOf(seguente);
+  w.cursor.set = Math.max(0, seguente.sets.findIndex((y) => !y.done));
+  save();
+  return getEx(seguente.exId).n;
+}
+
 /* --------------------------------------------------------------- sheets - */
 
 function setTypeSheet(k) {
@@ -931,6 +988,8 @@ function exerciseMenu() {
       <button class="row" data-a="info"><span class="avatar">${icon('info', 19)}</span><span class="grow"><span class="t">Tecnica ed errori comuni</span></span>${icon('chevR', 17)}</button>
       <button class="row" data-a="swap"><span class="avatar">${icon('swap', 19)}</span><span class="grow"><span class="t">Sostituisci esercizio</span></span>${icon('chevR', 17)}</button>
       <button class="row" data-a="superset"><span class="avatar">${icon('layers', 19)}</span><span class="grow"><span class="t">${e.superset ? 'Togli dal superset' : 'Crea superset'}</span><span class="s">${e.superset ? 'Torna a esercizio singolo' : 'Abbina all’esercizio successivo'}</span></span></button>
+      <button class="row" data-a="later"><span class="avatar">${icon('clock', 19)}</span>
+        <span class="grow"><span class="t">Posticipa</span><span class="s">Macchinario occupato: lo riprendi più avanti</span></span></button>
       <button class="row" data-a="up"><span class="avatar">${icon('arrowUp', 19)}</span><span class="grow"><span class="t">Sposta su</span></span></button>
       <button class="row" data-a="down"><span class="avatar">${icon('arrowDown', 19)}</span><span class="grow"><span class="t">Sposta giù</span></span></button>
       <button class="row" data-a="del"><span class="avatar" style="color:var(--err)">${icon('trash', 19)}</span><span class="grow"><span class="t" style="color:var(--err)">Rimuovi dall’allenamento</span></span></button>
@@ -948,6 +1007,13 @@ function exerciseMenu() {
           refresh({ figure: true });
           toast('Esercizio sostituito');
         }, { title: 'Sostituisci esercizio' });
+        return;
+      }
+      if (a === 'later') {
+        closeSheet();
+        const dopo = postponeExercise();
+        refresh({ figure: true });
+        toast(dopo ? `${icon('clock', 15)} Rimandato dopo ${esc(dopo)}` : 'È già l’ultimo esercizio', dopo ? '' : 'err');
         return;
       }
       if (a === 'superset') {

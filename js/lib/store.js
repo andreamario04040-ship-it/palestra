@@ -35,7 +35,7 @@ export const DEFAULTS = {
   measures: [],       // peso corporeo e circonferenze
   customEx: [],       // esercizi creati dall'utente
   current: null,      // allenamento in corso
-  meta: { installSeen: false, created: null, lastBackup: null, seeded: false },
+  meta: { installSeen: false, created: null, lastBackup: null, seeded: false, warmupsFilled: false },
 };
 
 export const S = structuredClone(DEFAULTS);
@@ -124,6 +124,7 @@ function migrate() {
   for (const r of S.routines) for (const d of r.days || []) for (const row of d.exercises || []) {
     if (row.superset === undefined) row.superset = null;
     if (row.warm === undefined) row.warm = false;
+    if (row.warmSets === undefined) row.warmSets = 0;
   }
 }
 
@@ -242,8 +243,8 @@ export function newDay(routine, name) {
 }
 
 /** Riga esercizio dentro un giorno di scheda. */
-export function newRow(exId, { sets = 3, reps = '8-12', rest = 90, note = '', superset = null, warm = false } = {}) {
-  return { id: uid(), exId, sets, reps, rest, note, superset, warm };
+export function newRow(exId, { sets = 3, reps = '8-12', rest = 90, note = '', superset = null, warm = false, warmSets = 0 } = {}) {
+  return { id: uid(), exId, sets, reps, rest, note, superset, warm, warmSets };
 }
 
 export function deleteRoutine(id) {

@@ -88,7 +88,7 @@ function routineView(r) {
             return `<button class="row" data-ed="${d.id}:${e.id}"${col ? ` style="box-shadow:inset 3px 0 0 ${col}"` : ''}>
             <span class="pill${e.warm ? ' warm' : ''}" style="min-width:48px;justify-content:center">${e.sets}×${esc(String(e.reps))}</span>
             <span class="grow"><span class="t">${esc(getEx(e.exId).n)}</span>
-            <span class="s">${e.warm ? '<b style="color:var(--warn)">riscaldamento</b> · ' : ''}${col ? '<b style="color:' + col + '">superset</b> · ' : ''}${(getEx(e.exId).m || []).map((m) => MUSCLES[m]?.n || m).join(', ')} · rec ${e.rest}s</span></span>
+            <span class="s">${e.warm ? '<b style="color:var(--warn)">riscaldamento</b> · ' : e.warmSets ? `<b style="color:var(--warn)">+${e.warmSets} risc.</b> · ` : ''}${col ? '<b style="color:' + col + '">superset</b> · ' : ''}${(getEx(e.exId).m || []).map((m) => MUSCLES[m]?.n || m).join(', ')} · rec ${e.rest}s</span></span>
             ${icon('chevR', 17)}</button>`;
           }).join('')}
         </div>` : '<p class="muted fs13 mt10">Nessun esercizio.</p>'}
@@ -115,6 +115,9 @@ function rowSheet(r, d, row) {
       <div class="field"><label>Ripetizioni</label>
         <input class="input" data-f="reps" value="${esc(String(row.reps))}" placeholder="es. 8-12 oppure 10 oppure 45 s">
       </div>
+      <div class="field"><label>Serie di riscaldamento</label>
+        <div class="stepper"><button data-w="-1">−</button><label class="val"><input type="number" inputmode="numeric" data-f="warmSets" value="${row.warmSets || 0}"><small>prima del lavoro</small></label><button data-w="1">+</button></div>
+      </div>
       <div class="field"><label>Recupero</label>
         <div class="stepper"><button data-r="-15">−</button><label class="val"><input type="number" inputmode="numeric" data-f="rest" value="${row.rest}"><small>secondi</small></label><button data-r="15">+</button></div>
       </div>
@@ -137,11 +140,13 @@ function rowSheet(r, d, row) {
       const num = (sel) => $(`[data-f="${sel}"]`, el);
       on(el, 'click', '[data-s]', (e, t) => { num('sets').value = Math.max(1, Math.min(12, Number(num('sets').value) + Number(t.dataset.s))); });
       on(el, 'click', '[data-r]', (e, t) => { num('rest').value = Math.max(0, Number(num('rest').value) + Number(t.dataset.r)); });
+      on(el, 'click', '[data-w]', (e, t) => { num('warmSets').value = Math.max(0, Math.min(5, Number(num('warmSets').value) + Number(t.dataset.w))); });
       const commit = () => {
         row.sets = Math.max(1, Number(num('sets').value) || 3);
         row.reps = num('reps').value.trim() || '8-12';
         row.rest = Math.max(0, Number(num('rest').value) || 90);
         row.note = num('note').value.trim();
+        row.warmSets = Math.max(0, Math.min(5, Number(num('warmSets').value) || 0));
         save();
       };
       $('[data-save]', el).onclick = () => { commit(); closeSheet(); render(); };
@@ -281,7 +286,7 @@ function previewImport(parsed) {
           id: uid(), name: parsed.name, note: 'Importata', created: new Date().toISOString(),
           days: parsed.days.map((d) => ({
             id: uid(), name: d.name,
-            exercises: d.exercises.map((e) => ({ id: uid(), exId: e.exId, sets: e.sets, reps: e.reps, rest: e.rest, note: '', superset: null, warm: !!e.warm })),
+            exercises: d.exercises.map((e) => ({ id: uid(), exId: e.exId, sets: e.sets, reps: e.reps, rest: e.rest, note: '', superset: null, warm: !!e.warm, warmSets: e.warmSets || 0 })),
           })),
         };
         S.routines.push(r);

@@ -102,11 +102,20 @@ export function prevSet(exId, workIndex) {
 }
 
 /** Serie di riscaldamento proposte per un carico di lavoro. */
-export function warmupSets(work, ex) {
+/** Rampa di avvicinamento: `n` serie sempre più pesanti verso il carico di lavoro. */
+const RAMPE = {
+  1: [[0.6, 8]],
+  2: [[0.5, 8], [0.75, 4]],
+  3: [[0.5, 8], [0.7, 5], [0.85, 3]],
+  4: [[0.4, 10], [0.55, 8], [0.7, 5], [0.85, 3]],
+  5: [[0.35, 10], [0.5, 8], [0.65, 6], [0.78, 4], [0.88, 2]],
+};
+
+export function warmupSets(work, ex, n = 3) {
   if (!work || work < 25) return [];
   const bar = ex?.eq === 'bilanciere' || ex?.eq === 'smith' ? S.settings.barWeight : 0;
   const out = [];
-  const f = [[0.5, 8], [0.7, 5], [0.85, 3]];
+  const f = RAMPE[Math.max(1, Math.min(5, n))] || RAMPE[3];
   for (const [p, r] of f) {
     const w = Math.max(bar, roundLoad(work * p, ex));
     if (!out.some((o) => o.weight === w)) out.push({ weight: w, reps: r, type: 'w' });

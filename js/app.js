@@ -114,6 +114,27 @@ function seedRoutine() {
   save();
 }
 
+/* I conteggi di riscaldamento sono arrivati dopo il modello: una volta sola li
+   riporto sulle schede che da quel modello sono nate, riconosciute dal fatto
+   che giorni ed esercizi coincidono ancora. Chi ha già messo mano alla scheda
+   non viene toccato. */
+function fillWarmups() {
+  if (S.meta.warmupsFilled) return;
+  const tpl = TEMPLATES.find((t) => t.key === 'andrea');
+  if (tpl) {
+    for (const r of S.routines) {
+      for (const d of r.days || []) {
+        const g = tpl.days.find((x) => x.name === d.name);
+        if (!g || g.ex.length !== d.exercises.length) continue;
+        if (!g.ex.every((e, i) => e.exId === d.exercises[i].exId)) continue;
+        d.exercises.forEach((row, i) => { if (!row.warmSets) row.warmSets = g.ex[i].warmSets; });
+      }
+    }
+  }
+  S.meta.warmupsFilled = true;
+  save();
+}
+
 /* ------------------------------------------------------- viewport corto --- */
 
 /**
@@ -214,6 +235,7 @@ async function boot() {
 
   await load();
   seedRoutine();
+  fillWarmups();
   registerCustom(S.customEx || []);
   buildIndex();
   applyTheme();
