@@ -8,6 +8,7 @@ import { icon } from '../lib/icons.js';
 import { heatGrid } from '../lib/charts.js';
 import { go, render } from '../app.js';
 import { startWorkout, quickStart } from './workout.js';
+import { doExport } from './settings.js';
 
 function greet() {
   const h = new Date().getHours();
@@ -24,6 +25,7 @@ export function estimate(day) {
     const rr = parseReps(r.reps);
     const work = rr.timed ? rr.max : Math.max(20, rr.max * 3.5);
     t += r.sets * (work + (r.rest || 90));
+    t += (r.warm ? 0 : r.warmSets || 0) * (work * 0.7 + 60);   // anche l'avvicinamento costa tempo
   }
   return t + 240; // riscaldamento e transizioni
 }
@@ -49,6 +51,33 @@ function goalCard(done) {
 }
 
 /** Invito (una sola volta) ad aggiungere l'app alla schermata Home. */
+/**
+ * Promemoria del backup. I dati stanno solo su questo telefono: se svuoti
+ * Safari o cambi dispositivo spariscono, e nessuno te lo ricorda. Compare
+ * quando si sono accumulati allenamenti non ancora messi al sicuro, e sparisce
+ * da solo appena esporti.
+ */
+function backupCard() {
+  const ultimo = S.meta.lastBackup ? new Date(S.meta.lastBackup) : null;
+  const rinvio = S.meta.backupSnooze ? new Date(S.meta.backupSnooze) : null;
+  const da = ultimo && rinvio ? new Date(Math.max(ultimo, rinvio)) : (ultimo || rinvio);
+  const nuovi = S.sessions.filter((s) => !da || new Date(s.date) > da).length;
+  if (nuovi < (ultimo ? 10 : 5)) return '';
+  return `<div class="card mt20" style="border-color:var(--line-2)">
+    <div class="flex center gap12">
+      <span class="avatar">${icon('download', 20)}</span>
+      <div class="grow"><div class="t fw7">Metti al sicuro i tuoi dati</div>
+      <div class="s muted fs12">${ultimo
+        ? `${plur(nuovi, 'allenamento registrato', 'allenamenti registrati')} dall’ultimo backup del ${esc(fmtDate(ultimo))}.`
+        : `${plur(nuovi, 'allenamento registrato', 'allenamenti registrati')} e nessun backup: restano solo su questo telefono.`}</div></div>
+    </div>
+    <div class="flex gap8 mt14">
+      <button class="btn ghost sm grow" data-act="backupskip">Più tardi</button>
+      <button class="btn sm grow" data-act="backupnow">Esporta backup</button>
+    </div>
+  </div>`;
+}
+
 function installCard() {
   const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
   if (standalone || S.meta.installSeen) return '';
@@ -101,7 +130,10 @@ export default {
             <button class="pill" data-act="pickday">${esc(rt.name)} ${icon('chevD', 12)}</button>
           </div>
           <h2 style="font-size:26px;font-weight:800;letter-spacing:-.035em;margin:12px 0 6px">${esc(day.name)}</h2>
-          <div class="fs13 muted">${plur(day.exercises.length, 'esercizio', 'esercizi')} · ${day.exercises.reduce((a, e) => a + e.sets, 0)} serie · ~${fmtDurShort(estimate(day))}</div>
+          <div class="fs13 muted">${plur(day.exercises.length, 'esercizio', 'esercizi')} · ${day.exercises.reduce((a, e) => a + e.sets, 0)} serie${(() => {
+            const sc = day.exercises.reduce((a, e) => a + (e.warm ? 0 : e.warmSets || 0), 0);
+            return sc ? ` + ${sc} di riscaldamento` : '';
+          })()} · ~${fmtDurShort(estimate(day))}</div>
           <div class="flex wrap gap6 mt10">${musclesOf(day).map((m) => `<span class="pill">${esc(m)}</span>`).join('')}</div>
           <div class="divider"></div>
           <div class="rows" style="margin:-4px 0 10px">
@@ -151,6 +183,7 @@ export default {
           </div>
         </button>` : ''}
 
+      ${backupCard()}
       ${installCard()}
 
       <div class="section-title">Scorciatoie</div>
@@ -170,6 +203,12 @@ export default {
     on(root, 'click', '[data-act="goroutines"]', () => go('routines', {}, { reset: true }));
     on(root, 'click', '[data-act="gohistory"]', () => go('history', {}, { reset: true }));
     on(root, 'click', '[data-act="goexercises"]', () => go('exercises'));
+    on(root, 'click', '[data-act="backupnow"]', () => doExport());
+    // "più tardi": segna la data senza esportare, così la card tace per un po'
+    on(root, 'click', '[data-act="backupskip"]', () => {
+      S.meta.backupSnooze = new Date().toISOString();
+      save(); render();
+    });
     on(root, 'click', '[data-act="lastsess"]', () => go('history', { open: S.sessions[S.sessions.length - 1].id }));
     on(root, 'click', '[data-act="measure"]', () => import('./stats.js').then((m) => m.measureSheet()));
     on(root, 'click', '[data-act="installok"]', () => { S.meta.installSeen = true; save(); render(); });

@@ -11,7 +11,7 @@ import {
 } from '../lib/store.js';
 import { getEx, stepFor, MUSCLES } from '../data/exercises.js';
 import {
-  suggest, parseReps, warmupSets, plateBreakdown, detectPRs, tipFor, prevSet,
+  suggest, parseReps, warmupSets, plateBreakdown, detectPRs, tipFor, prevSet, roundLoad, barFor,
 } from '../lib/coach.js';
 import {
   esc, uid, $, $$, on, fmtDur, fmtDurShort, fmtWeight, fmtVol, fmtVolume, toast, sparkle,
@@ -226,7 +226,7 @@ function bodyHTML() {
   const i = clamp(w.cursor.set, 0, e.sets.length - 1);
   const set = e.sets[i];
   const rr = parseReps(e.targetReps);
-  const sg = suggest(e.exId, workOrdinal(e, i), { reps: e.targetReps, sets: e.sets.length });
+  const sg = suggest(e.exId, workOrdinal(e, i), { id: e.rowId, reps: e.targetReps, sets: e.sets.length });
   const allDone = e.sets.every((s) => s.done);
   const pr = prOf(e.exId);
   const isTimed = rr.timed || ex.timed;
@@ -238,6 +238,11 @@ function bodyHTML() {
   const warmN = warm ? e.sets.filter((x, k) => x.type === 'w' && k <= i).length : 0;
   const daScaldare = !allDone && !warmTot && S.settings.warmup
     && !e.sets.some((x) => x.done) && e.sets.filter(isWork).length > 1;
+  /* La rampa di avvicinamento si calcola dal carico di lavoro: la prima volta
+     che fai un esercizio quel carico non esiste ancora, e le serie di
+     riscaldamento nascevano vuote senza che niente lo spiegasse. Allora la
+     prima cosa che la schermata chiede è proprio quello. */
+  const caricoIgnoto = warm && e.sets.filter(isWork).every((x) => x.weight == null);
 
   return `
     <div class="ex-hero${warm ? ' warm' : ''}"${col && !warm ? ` style="border-color:${col}55"` : ''}>
@@ -266,15 +271,17 @@ function bodyHTML() {
 
       <div class="set-head">
         <div class="big${warm ? ' warm' : ''}">${allDone ? 'Esercizio completato'
+          : caricoIgnoto ? 'Con quanto lavori oggi?'
           : warm ? `Serie di avvicinamento ${warmN} di ${warmTot}`
           : `Serie ${workOrdinal(e, i) + 1} di ${e.sets.filter(isWork).length}${set.type !== 'n' ? ' · ' + SET_TYPES[set.type].name.toLowerCase() : ''}`}</div>
         ${!allDone && !warm && sg.tone !== 'new' ? `<div class="hint">${sg.tone === 'up' ? '↑ progressione' : sg.tone === 'down' ? '↓ scarico' : 'mantieni'}</div>` : ''}
-        ${warm ? '<div class="hint warm">non a cedimento</div>' : ''}
+        ${warm && !caricoIgnoto ? '<div class="hint warm">non a cedimento</div>' : ''}
+        ${caricoIgnoto ? '<div class="hint warm">serve per la rampa</div>' : ''}
       </div>
 
-      <div class="inputs">
-        ${numField('weight', set.weight, 'kg', 'decimal')}
-        ${numField('reps', set.reps, isTimed ? 'secondi' : 'ripetizioni', 'numeric')}
+      <div class="inputs${caricoIgnoto ? ' uno' : ''}">
+        ${numField('weight', caricoIgnoto ? null : set.weight, caricoIgnoto ? 'kg di lavoro' : 'kg', 'decimal')}
+        ${caricoIgnoto ? '' : numField('reps', set.reps, isTimed ? 'secondi' : 'ripetizioni', 'numeric')}
       </div>
 
       ${S.settings.rpe && !allDone ? `<div class="rpe-row">
@@ -282,7 +289,9 @@ function bodyHTML() {
         ${[6, 7, 7.5, 8, 8.5, 9, 9.5, 10].map((v) => `<button class="rpe ${set.rpe === v ? 'on' : ''}" data-rpe="${v}">${String(v).replace('.', ',')}</button>`).join('')}
       </div>` : ''}
 
-      ${warm
+      ${caricoIgnoto
+        ? `<div class="coach warm">${icon('flame', 17)}<div>Dimmi il carico delle serie di lavoro e preparo io ${warmTot === 1 ? 'la serie di avvicinamento' : `le ${warmTot} serie di avvicinamento`}. Se non lo sai ancora, parti prudente: lo correggi quando ci arrivi.</div></div>`
+        : warm
         ? `<div class="coach warm">${icon('flame', 17)}<div>Serve a scaldare, non a stancare: tieni il carico leggero e fermati molto prima del cedimento. Le serie di lavoro iniziano dopo.</div></div>`
         : daScaldare
           ? `<div class="coach warm"><div class="grow">${icon('flame', 17)} Prima serie di lavoro: vuoi aggiungere il riscaldamento?</div>
@@ -293,7 +302,9 @@ function bodyHTML() {
         ${allDone
           ? `<button class="btn ghost lg" data-act="addset" aria-label="Aggiungi serie">${icon('plus', 18)}</button>
              <button class="btn primary lg" style="flex:1" data-act="next">Prossimo esercizio ${icon('chevR', 18)}</button>`
-          : `<button class="btn ghost lg" data-act="plates" aria-label="Dischi">${icon('layers', 18)}</button>
+          : caricoIgnoto
+            ? `<button class="btn warm lg" style="flex:1" data-act="setwork">${icon('flame', 20)} Prepara il riscaldamento</button>`
+            : `<button class="btn ghost lg" data-act="plates" aria-label="Dischi">${icon('layers', 18)}</button>
              <button class="btn ${warm ? 'warm' : 'primary'} lg" data-act="done">${icon('check', 20)} ${warm ? 'Riscaldamento fatto' : 'Completa serie'}</button>`}
       </div>
     </div>
@@ -306,7 +317,7 @@ function bodyHTML() {
         <span class="c-act"></span>
       </div>
       ${e.sets.map((s, k) => {
-        const p = isWork(s) ? prevSet(e.exId, workOrdinal(e, k)) : null;
+        const p = isWork(s) ? prevSet(e.exId, workOrdinal(e, k), { id: e.rowId, reps: e.targetReps }) : null;
         const st = SET_TYPES[s.type] || SET_TYPES.n;
         return `
         <div class="set-line ${s.type === 'w' ? 'w' : ''} ${s.done ? 'done' : ''} ${!s.done && k === i ? 'cur' : ''}" data-set="${k}">
@@ -357,6 +368,16 @@ function railHTML() {
 function refresh({ figure = true } = {}) {
   const body = $('#wkBody'), rail = $('#wkRail');
   if (!body) return;
+
+  /* L'animazione vive dentro il corpo della schermata, che qui viene
+     ridisegnato da capo. Se l'esercizio è lo stesso la si stacca prima e la si
+     riattacca dopo: così non si interrompe, e soprattutto non sparisce — prima
+     il nodo veniva buttato con il resto e non lo si rimontava più, quindi
+     l'omino si vedeva solo fino alla prima serie completata. */
+  const e = curEx();
+  const riusa = !figure && fig && e && figEx === e.exId ? fig.el : null;
+  if (riusa) riusa.remove();
+
   body.innerHTML = bodyHTML();
   rail.innerHTML = railHTML();
   const p = progress();
@@ -365,10 +386,10 @@ function refresh({ figure = true } = {}) {
   const st = $('#wkStats');
   if (st) st.textContent = `${ls.sets} serie · ${fmtVol(ls.vol)}`;
 
-  const e = curEx();
   const host = $('#wkFig');
   if (host && e) {
-    if (figure || figEx !== e.exId) {
+    if (riusa) host.appendChild(riusa);
+    else {
       fig?.destroy();
       fig = mountFigure(host, getEx(e.exId), { cls: 'exfig' });
       figEx = e.exId;
@@ -449,12 +470,15 @@ function completeSet(k = null) {
     }
   }
 
-  // --- myo-reps: dopo l'attivazione si continua a mini-serie finché reggono ---
+  /* myo-reps: dopo l'attivazione si continua a mini-serie finché reggono. La
+     regola è quella vera: quando non arrivi più a 3 ripetizioni la serie è
+     finita, e non ha senso proporne un'altra. */
   if (s.type === 'm') {
     const fatte = e.sets.filter((x) => x.type === 'm' && x.done).length;
-    if (!e.sets.some((x) => !x.done) && fatte < 7) {
+    const regge = (Number(s.reps) || 0) >= 3;
+    if (!e.sets.some((x) => !x.done) && fatte < 7 && regge) {
       e.sets.push({
-        id: uid(), weight: s.weight, rpe: null, type: 'm', done: false,
+        id: uid(), weight: s.weight, rpe: null, type: 'm', done: false, auto: true,
         reps: Math.max(3, Math.round((Number(s.reps) || 9) / 3)),
       });
     }
@@ -535,7 +559,9 @@ function showRest() {
     ${e ? `<div class="nextup">
       <div class="k">Prossima serie</div>
       <div class="v">${esc(ex.n)}</div>
-      <div class="w">${nxt?.weight != null ? fmtWeight(nxt.weight) + ' kg × ' : ''}${nxt?.reps ?? ''} ${nxt?.reps ? 'rip.' : ''} · serie ${i + 1}/${e.sets.length}</div>
+      <div class="w">${nxt?.weight != null ? fmtWeight(nxt.weight) + ' kg × ' : ''}${nxt?.reps ?? ''} ${nxt?.reps ? 'rip.' : ''} · ${nxt?.type === 'w'
+        ? `avvicinamento ${e.sets.filter((s, k) => s.type === 'w' && k <= i).length} di ${e.sets.filter((s) => s.type === 'w').length}`
+        : `serie ${workOrdinal(e, i) + 1}/${e.sets.filter(isWork).length}`}</div>
     </div>` : ''}
     ${sfida ? `<div class="coach push" style="margin:12px 0 0;max-width:360px">${icon(sfida.forte ? 'trophy' : 'flame', 17)}<div>${esc(sfida.txt)}</div></div>` : ''}
     ${tip ? `<div class="coach" style="margin:12px 0 0;max-width:360px">${icon('bulb', 17)}<div>${esc(tip)}</div></div>` : ''}
@@ -609,6 +635,8 @@ function toSession(w) {
     exercises: w.exercises
       .map((e) => ({
         exId: e.exId,
+        rowId: e.rowId || null,          // distingue la riga pesante dal back-off
+        reps: e.targetReps ?? null,
         note: e.note,
         sets: e.sets.filter((s) => s.done).map((s) => ({
           weight: s.weight, reps: s.reps, rpe: s.rpe || null, type: s.type || 'n', done: true, ts: s.ts,
@@ -619,14 +647,31 @@ function toSession(w) {
 }
 
 /** La sessione differisce dalla scheda di partenza? (per proporre l'aggiornamento) */
+/** Serie di lavoro "previste": non contano quelle nate da una tecnica. */
+const serieProgrammate = (e) => (e.warm ? e.sets.length : e.sets.filter((s) => isWork(s) && !s.auto).length);
+
+/**
+ * La sessione differisce dalla scheda di partenza? Si confronta solo quello
+ * che verrebbe davvero riscritto — numero di serie e di avvicinamenti, riga
+ * per riga — perché l'ordine di oggi e le mini-serie delle tecniche non
+ * devono finire nel programma.
+ */
 function routineDiff(w) {
   const r = getRoutine(w.routineId);
   const day = r?.days.find((d) => d.id === w.dayId);
   if (!day) return null;
-  const was = day.exercises.map((x) => `${x.exId}:${x.sets}`).join('|');
-  const now = w.exercises.filter((e) => e.sets.some((s) => s.done))
-    .map((e) => `${e.exId}:${e.sets.filter(isWork).length}`).join('|');
-  return was === now ? null : { routine: r, day };
+  const fatto = new Map();
+  for (const e of w.exercises) {
+    if (!e.rowId || !e.sets.some((s) => s.done)) continue;
+    fatto.set(e.rowId, e);
+  }
+  const cambia = day.exercises.some((x) => {
+    const e = fatto.get(x.id);
+    if (!e) return false;
+    return serieProgrammate(e) !== x.sets || e.sets.filter((s) => s.type === 'w').length !== (x.warmSets || 0);
+  });
+  const nuovi = w.exercises.some((e) => e.sets.some((s) => s.done) && !day.exercises.some((x) => x.id === e.rowId));
+  return cambia || nuovi ? { routine: r, day } : null;
 }
 
 function finishSheet() {
@@ -636,7 +681,7 @@ function finishSheet() {
   const volume = sessionVolume(sess), sets = sessionSets(sess), duration = sess.duration;
 
   if (!sess.exercises.length) {
-    confirmSheet('Nessuna serie registrata', 'Vuoi annullare questo allenamento?', 'Annulla allenamento').then((ok) => {
+    confirmSheet('Nessuna serie registrata', 'Non c’è niente da salvare. Vuoi chiudere l’allenamento?', 'Chiudi', true, 'Resta qui').then((ok) => {
       if (ok) discard();
     });
     return;
@@ -665,8 +710,8 @@ function finishSheet() {
         </div>`).join('')}
       </div></div>
       ${diff ? `<label class="check-row mt14">
-        <input type="checkbox" data-upd checked>
-        <span><b>Aggiorna la scheda</b><br><span class="muted fs12">Salva le modifiche di oggi in “${esc(diff.day.name)}”</span></span>
+        <input type="checkbox" data-upd>
+        <span><b>Aggiorna la scheda</b><br><span class="muted fs12">Porta il numero di serie di oggi in “${esc(diff.day.name)}”. L’ordine resta quello della scheda.</span></span>
       </label>` : ''}
       ${!w.routineId ? `<label class="check-row mt14">
         <input type="checkbox" data-asroutine>
@@ -704,20 +749,38 @@ function finishSheet() {
   });
 }
 
-function applyToRoutine(w, { routine, day }) {
-  day.exercises = w.exercises
-    .filter((e) => e.sets.some((s) => s.done))
-    .map((e) => ({
+/**
+ * Riporta sulla scheda quello che è cambiato oggi: solo il numero di serie e
+ * di avvicinamenti, riga per riga. Non tocca l'ordine (posticipare un esercizio
+ * perché il macchinario era occupato è una scelta di giornata, non del
+ * programma), non cancella le righe saltate e non conta le mini-serie nate da
+ * una tecnica. Gli esercizi aggiunti durante l'allenamento finiscono in fondo.
+ */
+function applyToRoutine(w, { day }) {
+  for (const x of day.exercises) {
+    const e = w.exercises.find((y) => y.rowId === x.id && y.sets.some((s) => s.done));
+    if (!e) continue;
+    x.sets = Math.max(1, serieProgrammate(e));
+    x.warmSets = e.warm ? 0 : e.sets.filter((s) => s.type === 'w').length;
+    x.rest = e.rest;
+    x.note = e.note || '';
+    x.warm = !!e.warm;
+  }
+  for (const e of w.exercises) {
+    if (!e.sets.some((s) => s.done)) continue;
+    if (day.exercises.some((x) => x.id === e.rowId)) continue;
+    day.exercises.push({
       id: e.rowId || uid(),
       exId: e.exId,
-      sets: Math.max(1, e.warm ? e.sets.length : e.sets.filter(isWork).length),
+      sets: Math.max(1, serieProgrammate(e)),
       reps: e.targetReps,
       rest: e.rest,
       note: e.note || '',
       superset: e.superset || null,
       warm: !!e.warm,
       warmSets: e.warm ? 0 : e.sets.filter((s) => s.type === 'w').length,
-    }));
+    });
+  }
   save();
   toast('Scheda aggiornata');
 }
@@ -870,6 +933,28 @@ export function mountWorkout(root) {
     refresh({ figure: false });
     toast(`${ws.length} serie di riscaldamento aggiunte`);
   });
+  /* Il carico di lavoro dichiarato riempie in un colpo le serie di lavoro
+     ancora vuote e ricalcola la rampa di avvicinamento. */
+  h('[data-act="setwork"]', () => {
+    const e = curEx();
+    if (!e) return;
+    const v = Number(String($('[data-f="weight"]')?.value || '').replace(',', '.'));
+    if (!v || v <= 0) { toast('Inserisci il carico di lavoro', 'err'); return; }
+    const ex = getEx(e.exId);
+    const lavoro = roundLoad(v, ex);
+    for (const s of e.sets) if (isWork(s) && !s.done && s.weight == null) s.weight = lavoro;
+    const scaldo = e.sets.filter((s) => s.type === 'w');
+    const rampa = warmupSets(lavoro, ex, scaldo.length);
+    scaldo.forEach((s, k) => {
+      if (s.done || !rampa[k]) return;
+      s.weight = rampa[k].weight;
+      s.reps = rampa[k].reps;
+    });
+    save();
+    refresh({ figure: false });
+    toast(`${icon('flame', 15)} Riscaldamento pronto: si parte da ${fmtWeight(scaldo[0]?.weight ?? lavoro)} kg`, '', 2600);
+  });
+
   h('[data-act="exnote"]', async () => {
     const e = curEx(); if (!e) return;
     const v = await promptSheet('Nota esercizio', { value: e.note, multiline: true, placeholder: 'Es. presa più stretta, panca al buco 4…' });
@@ -912,24 +997,43 @@ export function mountWorkout(root) {
  * scivola più giù.
  * @returns il nome dell'esercizio dopo cui è finito, null se non c'è dove.
  */
+/**
+ * Rimanda l'esercizio più avanti nell'allenamento.
+ *
+ * Si posticipa perché il macchinario è occupato, e questo detta due regole.
+ * Primo: si spostano anche le altre righe dello stesso esercizio ancora
+ * intatte — la serie pesante e il back-off sono lo stesso macchinario, e
+ * lasciarne una indietro vorrebbe dire ritrovarsela subito davanti. Secondo:
+ * la destinazione è il primo esercizio *diverso*, per lo stesso motivo.
+ */
 function postponeExercise() {
   const w = W();
   const e = curEx();
   if (!e) return null;
 
-  const gruppo = e.superset ? w.exercises.filter((x) => x.superset === e.superset) : [e];
-  const ultimo = w.exercises.lastIndexOf(gruppo[gruppo.length - 1]);
   const libero = (x) => x.sets.some((y) => !y.done);
-  // prima cerco dopo di lui; se l'allenamento è agli sgoccioli, riparto da capo
-  const seguente = w.exercises.slice(ultimo + 1).find(libero)
-    || w.exercises.slice(0, w.exercises.indexOf(gruppo[0])).find(libero);
+  const gruppo = e.superset
+    ? w.exercises.filter((x) => x.superset === e.superset)
+    : w.exercises.filter((x) => x === e || (x.exId === e.exId && !x.sets.some((y) => y.done)));
+  const partenza = w.exercises.indexOf(gruppo[0]);
+  const ultimo = w.exercises.lastIndexOf(gruppo[gruppo.length - 1]);
+
+  const altro = (x) => libero(x) && !gruppo.includes(x) && x.exId !== e.exId;
+  const dopo = w.exercises.slice(ultimo + 1), prima = w.exercises.slice(0, partenza);
+  const seguente = dopo.find(altro) || prima.find(altro)
+    || dopo.find((x) => libero(x) && !gruppo.includes(x))
+    || prima.find((x) => libero(x) && !gruppo.includes(x));
   if (!seguente) return null;
 
   const resto = w.exercises.filter((x) => !gruppo.includes(x));
   resto.splice(resto.indexOf(seguente) + 1, 0, ...gruppo);
   w.exercises = resto;
-  w.cursor.ex = w.exercises.indexOf(seguente);
-  w.cursor.set = Math.max(0, seguente.sets.findIndex((y) => !y.done));
+
+  // si riprende dal primo esercizio libero da dove si era: niente righe saltate
+  const ripresa = w.exercises.findIndex((x, n) => n >= partenza && libero(x) && !gruppo.includes(x));
+  const k = ripresa >= 0 ? ripresa : w.exercises.indexOf(seguente);
+  w.cursor.ex = k;
+  w.cursor.set = Math.max(0, w.exercises[k].sets.findIndex((y) => !y.done));
   save();
   return getEx(seguente.exId).n;
 }
@@ -940,11 +1044,13 @@ function setTypeSheet(k) {
   const e = curEx();
   const s = e.sets[k];
   openSheet({
-    title: `Serie ${k + 1}`,
+    title: s.type === 'w'
+      ? `Avvicinamento ${e.sets.filter((x, n) => x.type === 'w' && n <= k).length}`
+      : `Serie ${workOrdinal(e, k) + 1}`,
     body: `<div class="card flush"><div class="rows">
       ${Object.entries(SET_TYPES).map(([key, t]) => `<button class="row" data-t="${key}">
         <span class="avatar ${s.type === key ? 'acc' : ''}">${t.lab || icon('check', 18)}</span>
-        <span class="grow"><span class="t">${esc(t.name)}</span><span class="s">${esc(t.desc)}</span></span>
+        <span class="grow"><span class="t">${esc(t.name)}</span><span class="s" style="white-space:normal">${esc(t.desc)}</span></span>
         ${s.type === key ? icon('check', 18) : ''}</button>`).join('')}
     </div></div>`,
     onMount: (el) => on(el, 'click', '[data-t]', (ev, t) => {
@@ -1002,7 +1108,7 @@ function exerciseMenu() {
         pickExercise((nw) => {
           e.exId = nw.id;
           e.sets.forEach((s, n) => {
-            if (!s.done) { const sg = suggest(nw.id, n, { reps: e.targetReps }); s.weight = sg.weight; s.reps = sg.reps; }
+            if (!s.done) { const sg = suggest(nw.id, n, { id: e.rowId, reps: e.targetReps }); s.weight = sg.weight; s.reps = sg.reps; }
           });
           refresh({ figure: true });
           toast('Esercizio sostituito');
@@ -1045,14 +1151,14 @@ function platesSheet() {
   const e = curEx(); if (!e) return;
   readInputs();
   const target = Number(e.sets[clamp(W().cursor.set, 0, e.sets.length - 1)].weight) || 0;
-  const bar = S.settings.barWeight;
+  const bar = barFor(getEx(e.exId));
   const b = plateBreakdown(target, bar);
   openSheet({
     title: 'Dischi per lato',
     body: `
       <div class="tc" style="margin-bottom:12px">
         <div style="font-size:40px;font-weight:820;letter-spacing:-.05em">${fmtWeight(target)} <span style="font-size:20px;color:var(--txt-3)">kg</span></div>
-        <div class="fs13 muted">bilanciere ${fmtWeight(bar)} kg</div>
+        <div class="fs13 muted">${getEx(e.exId).eq === 'ez' ? 'bilanciere EZ' : 'bilanciere'} ${fmtWeight(bar)} kg</div>
       </div>
       ${b.perSide.length ? `<div class="flex wrap gap8" style="justify-content:center">
         ${b.perSide.flatMap(({ p, n }) => Array.from({ length: n }, () => `
@@ -1072,7 +1178,7 @@ function workoutMenu() {
       <button class="row" data-m="rename"><span class="avatar">${icon('edit', 19)}</span><span class="grow"><span class="t">Rinomina allenamento</span></span></button>
       <button class="row" data-m="note"><span class="avatar">${icon('note', 19)}</span><span class="grow"><span class="t">Nota dell’allenamento</span></span></button>
       <button class="row" data-m="finish"><span class="avatar acc">${icon('checkCircle', 19)}</span><span class="grow"><span class="t">Termina e salva</span></span></button>
-      <button class="row" data-m="discard"><span class="avatar" style="color:var(--err)">${icon('trash', 19)}</span><span class="grow"><span class="t" style="color:var(--err)">Annulla allenamento</span></span></button>
+      <button class="row" data-m="discard"><span class="avatar" style="color:var(--err)">${icon('trash', 19)}</span><span class="grow"><span class="t" style="color:var(--err)">Butta via l’allenamento</span></span></button>
     </div></div>`,
     onMount: (el) => on(el, 'click', '[data-m]', async (e, t) => {
       const m = t.dataset.m;
@@ -1088,7 +1194,7 @@ function workoutMenu() {
       }
       if (m === 'finish') finishSheet();
       if (m === 'discard') {
-        const ok = await confirmSheet('Annullare?', 'Perderai tutte le serie registrate in questo allenamento.', 'Annulla allenamento');
+        const ok = await confirmSheet('Butti via l’allenamento?', 'Perderai tutte le serie registrate finora. Non si torna indietro.', 'Butta via', true, 'Continua ad allenarti');
         if (ok) discard();
       }
     }),

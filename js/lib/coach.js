@@ -44,7 +44,7 @@ export function roundLoad(w, ex) {
 export function suggest(exId, i, row) {
   const ex = getEx(exId);
   const rr = parseReps(row?.reps ?? ex.rr);
-  const hist = historyOf(exId);
+  const hist = historyOf(exId, row);
   const lp = hist[0];
 
   if (!S.settings.suggest || !lp || !lp.sets.length) {
@@ -58,7 +58,8 @@ export function suggest(exId, i, row) {
 
   const allTop = sets.every((s) => (Number(s.reps) || 0) >= rr.max);
   const allMin = sets.every((s) => (Number(s.reps) || 0) >= rr.min);
-  const recap = sets.map((s) => s.reps).join(',');
+  // separatore non virgola: in italiano "6,5" si legge sei virgola cinque
+  const recap = sets.map((s) => s.reps).join(' · ');
   const prev = `Ultima volta ${fmtWeight(base)} kg × ${recap}`;
 
   // stallo: 3 sessioni senza progresso di e1RM
@@ -95,8 +96,8 @@ export function suggest(exId, i, row) {
  * La serie corrispondente dell'ultimo allenamento, per il confronto a colpo
  * d'occhio accanto a ogni riga ("Precedente").
  */
-export function prevSet(exId, workIndex) {
-  const lp = historyOf(exId)[0];
+export function prevSet(exId, workIndex, row = null) {
+  const lp = historyOf(exId, row)[0];
   if (!lp || !lp.sets.length) return null;
   return lp.sets[Math.min(workIndex, lp.sets.length - 1)] || null;
 }
@@ -124,6 +125,11 @@ export function warmupSets(work, ex, n = 3) {
 }
 
 /** Dischi per lato. */
+/** Il bilanciere giusto per l'esercizio: l'EZ non pesa come l'olimpico. */
+export function barFor(ex) {
+  return ex?.eq === 'ez' ? (Number(S.settings.barWeightEz) || 10) : (Number(S.settings.barWeight) || 20);
+}
+
 export function plateBreakdown(total, bar = S.settings.barWeight, plates = S.settings.plates) {
   const perSide = (total - bar) / 2;
   if (perSide <= 0) return { ok: total === bar, perSide: [], left: perSide };
@@ -150,17 +156,34 @@ export function nextDay(routine) {
 }
 
 /** Rileva i record personali battuti in una sessione appena conclusa. */
+/**
+ * I record nuovi di una sessione.
+ *
+ * Si ragiona per esercizio, non per riga: lo stesso esercizio può comparire su
+ * più righe (la serie pesante e il back-off) e, confrontando ogni riga con il
+ * record di prima, il back-off risultava a sua volta un "nuovo record di
+ * carico" con un peso più basso di quello appena fatto.
+ */
 export function detectPRs(sess, prBefore) {
-  const out = [];
+  const migliori = new Map();
   for (const ex of sess.exercises || []) {
     const done = (ex.sets || []).filter((s) => s.done && isWork(s));
     if (!done.length) continue;
-    const before = prBefore[ex.exId] || { weight: 0, e1rm: 0, reps: 0 };
-    const maxW = Math.max(...done.map((s) => Number(s.weight) || 0));
-    const maxE = Math.max(...done.map((s) => e1rm(Number(s.weight) || 0, Number(s.reps) || 0)));
-    const name = getEx(ex.exId).n;
-    if (maxW > (before.weight || 0) && maxW > 0) out.push({ exId: ex.exId, type: 'carico', name, value: maxW });
-    else if (maxE > (before.e1rm || 0) + 0.4 && maxE > 0) out.push({ exId: ex.exId, type: 'forza stimata', name, value: Math.round(maxE) });
+    const m = migliori.get(ex.exId) || { w: 0, e: 0 };
+    for (const s of done) {
+      const w = Number(s.weight) || 0, r = Number(s.reps) || 0;
+      if (w > m.w) m.w = w;
+      const e = e1rm(w, r);
+      if (e > m.e) m.e = e;
+    }
+    migliori.set(ex.exId, m);
+  }
+  const out = [];
+  for (const [exId, m] of migliori) {
+    const before = prBefore[exId] || { weight: 0, e1rm: 0, reps: 0 };
+    const name = getEx(exId).n;
+    if (m.w > (before.weight || 0) && m.w > 0) out.push({ exId, type: 'carico', name, value: m.w });
+    else if (m.e > (before.e1rm || 0) + 0.4 && m.e > 0) out.push({ exId, type: 'forza stimata', name, value: Math.round(m.e) });
   }
   return out;
 }

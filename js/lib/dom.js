@@ -240,13 +240,13 @@ export function closeSheet(all = false) {
 export const sheetOpen = () => sheetStack.length > 0;
 
 /** Conferma modale -> Promise<boolean> */
-export function confirmSheet(title, msg, okLabel = 'Conferma', danger = true) {
+export function confirmSheet(title, msg, okLabel = 'Conferma', danger = true, noLabel = 'Annulla') {
   return new Promise((resolve) => {
     let done = false;
     const sheet = openSheet({
       title,
       body: `<p style="color:var(--txt-2);font-size:15px;line-height:1.5;margin-bottom:6px">${esc(msg)}</p>`,
-      foot: `<button class="btn ghost" data-no>Annulla</button>
+      foot: `<button class="btn ghost" data-no>${esc(noLabel)}</button>
              <button class="btn ${danger ? 'danger' : 'primary'}" data-yes>${esc(okLabel)}</button>`,
       onClose: () => { if (!done) resolve(false); },
     });

@@ -5,7 +5,7 @@ import { esc, $, $$, on, openSheet, closeSheet, confirmSheet, promptSheet, toast
 import { icon } from '../lib/icons.js';
 import { applyTheme, render, go, checkForUpdate, viewportInfo } from '../app.js';
 
-const VERSION = '1.7.1';
+const VERSION = '1.8.0';
 
 function toggleRow(key, title, sub, group = 'settings') {
   const v = group === 'settings' ? S.settings[key] : S[group][key];
@@ -29,7 +29,7 @@ function stamp() {
   return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
 }
 
-async function doExport() {
+export async function doExport() {
   const json = exportJSON();
   const file = new File([json], `palestra-backup-${stamp()}.json`, { type: 'application/json' });
   const segna = () => { S.meta.lastBackup = new Date().toISOString(); save(); };
@@ -123,6 +123,9 @@ export default {
         <button class="row" data-a="bar"><span class="avatar">${icon('dumbbell', 19)}</span>
           <span class="grow"><span class="t">Peso del bilanciere</span><span class="s">Per il calcolo dei dischi</span></span>
           <span class="pill acc">${fmtWeight(st.barWeight)} kg</span></button>
+        <button class="row" data-a="barez"><span class="avatar">${icon('dumbbell', 19)}</span>
+          <span class="grow"><span class="t">Peso del bilanciere EZ</span><span class="s">Per curl e french press</span></span>
+          <span class="pill acc">${fmtWeight(st.barWeightEz)} kg</span></button>
         <button class="row" data-a="plates"><span class="avatar">${icon('layers', 19)}</span>
           <span class="grow"><span class="t">Dischi disponibili</span><span class="s">${st.plates.map(fmtWeight).join(' · ')} kg</span></span>${icon('chevR', 17)}</button>
       </div></div>
@@ -199,6 +202,11 @@ export default {
         case 'bar': {
           const v = await promptSheet('Peso del bilanciere', { value: S.settings.barWeight, label: 'kg' });
           if (v) { S.settings.barWeight = Number(v.replace(',', '.')) || 20; save(); render(); }
+          break;
+        }
+        case 'barez': {
+          const v = await promptSheet('Peso del bilanciere EZ', { value: S.settings.barWeightEz, label: 'kg' });
+          if (v) { S.settings.barWeightEz = Number(v.replace(',', '.')) || 10; save(); render(); }
           break;
         }
         case 'plates': {

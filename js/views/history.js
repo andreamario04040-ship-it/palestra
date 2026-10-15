@@ -31,7 +31,11 @@ export function sessionSheet(id) {
         <div class="card" style="padding:12px 14px">
           <div class="fw7 fs15" style="letter-spacing:-.02em">${esc(getEx(e.exId).n)}</div>
           <div class="flex wrap gap6 mt6">
-            ${e.sets.map((x, i) => `<span class="pill ${isWork(x) ? 'acc' : ''}">${SET_TYPES[x.type || 'n']?.lab || i + 1}· ${x.weight != null ? fmtWeight(x.weight) + '×' : ''}${x.reps}${x.rpe ? ` <small style="opacity:.7">@${x.rpe}</small>` : ''}</span>`).join('')}
+            ${(() => { let n = 0; return e.sets.map((x) => {
+              if (isWork(x)) n++;                       // il riscaldamento non entra nel conto
+              const lab = SET_TYPES[x.type || 'n']?.lab || n;
+              return `<span class="pill ${isWork(x) ? 'acc' : ''}">${lab}· ${x.weight != null ? fmtWeight(x.weight) + '×' : ''}${x.reps}${x.rpe ? ` <small style="opacity:.7">@${x.rpe}</small>` : ''}</span>`;
+            }).join(''); })()}
           </div>
           ${e.note ? `<div class="fs12 muted mt6">${esc(e.note)}</div>` : ''}
         </div>`).join('')}`,

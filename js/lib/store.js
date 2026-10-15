@@ -22,6 +22,7 @@ export const DEFAULTS = {
     wakeLock: true,
     theme: 'dark',
     barWeight: 20,
+    barWeightEz: 10,          // l'EZ pesa meno del bilanciere olimpico
     plates: [25, 20, 15, 10, 5, 2.5, 1.25],
     suggest: true,
     warmup: true,
@@ -35,7 +36,10 @@ export const DEFAULTS = {
   measures: [],       // peso corporeo e circonferenze
   customEx: [],       // esercizi creati dall'utente
   current: null,      // allenamento in corso
-  meta: { installSeen: false, created: null, lastBackup: null, seeded: false, warmupsFilled: false },
+  meta: {
+    installSeen: false, created: null, lastBackup: null, backupSnooze: null,
+    seeded: false, warmupsFilled: false,
+  },
 };
 
 export const S = structuredClone(DEFAULTS);
@@ -164,7 +168,7 @@ export const SET_TYPES = {
   w: { lab: 'W', name: 'Riscaldamento', desc: 'Non conta nel volume né nei record', cls: 'warm' },
   n: { lab: '', name: 'Normale', desc: 'Serie di lavoro', cls: '' },
   d: { lab: 'D', name: 'Drop set', desc: 'Scarico immediato senza recupero', cls: 'drop' },
-  m: { lab: 'M', name: 'Myo-reps', desc: 'Serie di attivazione, poi mini-serie da 3-5 con un respiro di recupero', cls: 'myo' },
+  m: { lab: 'M', name: 'Myo-reps', desc: 'Attivazione, poi mini-serie da 3-5 con un respiro di recupero', cls: 'myo' },
   f: { lab: 'F', name: 'A cedimento', desc: 'Portata al limite', cls: 'fail' },
 };
 
@@ -197,7 +201,10 @@ export function buildIndex() {
     for (const ex of sess.exercises || []) {
       const done = (ex.sets || []).filter((s) => s.done && isWork(s));
       if (!done.length) continue;
-      (byEx[ex.exId] ||= []).push({ date: sess.date, sessionId: sess.id, sets: done });
+      (byEx[ex.exId] ||= []).push({
+        date: sess.date, sessionId: sess.id, sets: done,
+        rowId: ex.rowId || null, reps: ex.reps != null ? String(ex.reps) : null,
+      });
       const p = (pr[ex.exId] ||= { weight: 0, reps: 0, e1rm: 0, volume: 0, date: null });
       let vol = 0;
       for (const s of done) {
@@ -218,7 +225,25 @@ export function buildIndex() {
 }
 
 export const idx = () => IDX;
-export const historyOf = (exId) => IDX.byEx[exId] || [];
+
+/**
+ * Lo storico di un esercizio, ristretto alla riga di scheda quando serve.
+ *
+ * Nella stessa giornata lo stesso esercizio può comparire su più righe — la
+ * serie pesante e il back-off da 20 — e sono due storie diverse: se si
+ * mescolano, la riga pesante si vede proporre il carico del back-off. Le
+ * sessioni vecchie non registravano la riga: in quel caso si ricade sullo
+ * storico intero, come prima.
+ */
+export function historyOf(exId, row = null) {
+  const tutte = IDX.byEx[exId] || [];
+  if (!row || tutte.length < 1) return tutte;
+  const id = row.rowId || row.id || null;
+  const reps = row.reps != null ? String(row.reps) : null;
+  const mie = tutte.filter((h) => (h.rowId && id ? h.rowId === id
+    : h.reps != null && reps ? h.reps === reps : false));
+  return mie.length ? mie : tutte.filter((h) => !h.rowId && h.reps == null);
+}
 export const prOf = (exId) => IDX.pr[exId] || null;
 export const lastPerf = (exId) => (IDX.byEx[exId] || [])[0] || null;
 

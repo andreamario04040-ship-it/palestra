@@ -4,7 +4,7 @@ import { S, save, addMeasure, sessionsSince, sessionVolume, sessionSets, idx, pr
 import { getEx, MUSCLES } from '../data/exercises.js';
 import { setsByMuscle, weeklyVolume, e1rmSeries } from '../lib/coach.js';
 import {
-  esc, $, $$, on, fmtVolume, fmtWeight, fmtDurShort, fmtDate, openSheet, closeSheet, toast,
+  esc, $, $$, on, fmtVolume, fmtWeight, fmtDurShort, fmtDate, openSheet, closeSheet, toast, plur,
 } from '../lib/dom.js';
 import { icon } from '../lib/icons.js';
 import { lineChart, barChart, barRows, bodyMap } from '../lib/charts.js';
@@ -56,7 +56,8 @@ export default {
     const dur = ss.reduce((a, s) => a + (s.duration || 0), 0);
     const weeks = Math.max(1, period / 7);
 
-    const wv = weeklyVolume(period >= 365 ? 52 : period >= 84 ? 12 : 8);
+    // il grafico mostra la finestra scelta, non una fissa più lunga
+    const wv = weeklyVolume(period >= 365 ? 52 : period >= 84 ? 12 : 4);
     const byMuscle = setsByMuscle(ss);
     const muscleRows = Object.entries(byMuscle)
       .sort((a, b) => b[1] - a[1])
@@ -78,7 +79,7 @@ export default {
     const wSeries = S.measures.filter((m) => m.weight).map((m) => ({ v: m.weight }));
 
     return `
-      <div class="topbar"><div><h1>Statistiche</h1><div class="sub">${S.sessions.length} allenamenti totali</div></div></div>
+      <div class="topbar"><div><h1>Statistiche</h1><div class="sub">${plur(S.sessions.length, 'allenamento totale', 'allenamenti totali')}</div></div></div>
 
       <div class="seg" style="margin-bottom:16px">
         ${[[28, '4 sett.'], [84, '3 mesi'], [365, '1 anno'], [3650, 'Sempre']].map(([d, l]) =>
